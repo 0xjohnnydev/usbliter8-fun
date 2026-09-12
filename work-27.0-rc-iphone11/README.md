@@ -46,6 +46,18 @@ re-signed them. Because `restored_external` is the ramdisk's main launch daemon
 and provides the restored protocol used for Mac enumeration, that is a leading
 candidate, but the kernel, DeviceTree, and TXM still need to be isolated too.
 
+The ramdisk signing step now uses macOS `codesign` with explicit metadata
+preservation. The patched executables retain the original
+`com.apple.restored_external` and `com.apple.asr` identifiers and entitlements;
+`restored_external` also retains its Apple self launch constraint. Each new
+ad-hoc signature is verified before the ramdisk is repacked.
+
+A non-erasing `-z` hardware boot using the stock restore ramdisk, DeviceTree,
+TXM, and kernel subsequently reached restored protocol version 15. This rules
+out the usbliter8 exploit, patched iBSS/iBEC, ticket flow, USB path, and Apple's
+unmodified restore environment. The metadata-preserving ramdisk rebuild is the
+current corrected CFW; a full erase restore with it has not yet been run.
+
 Target IPSW SHA-256:
 
 ```text
