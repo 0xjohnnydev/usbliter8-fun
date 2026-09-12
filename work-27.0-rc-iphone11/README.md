@@ -14,7 +14,10 @@ Apple-service functionality unavailable.
 - The exact IPSW identity and SHA-256.
 - Every firmware path used by the build scripts exists in the iPhone 11 IPSW.
 - iBSS/iBEC, TXM, kernelcache, restore ramdisk, and userland patch sites were
-  matched to their 24A435 instructions.
+  matched to their 24A435 instructions. The restore/boot chains also preserve
+  the nonce exactly as the hardware-tested beta-2 workflow does, and the two
+  beta-2 restore-time baseband predicates were mapped by symbol, function body,
+  and caller set to the 24A435 `restored_external`.
 - A complete offline `make_cfw.py` build finished successfully. The rebuilt
   IMG4/PAYP metadata parses, all 35 CFW postimages match the requested patches,
   and the repacked DeviceTree matches the verified transform byte-for-byte.
@@ -42,12 +45,20 @@ bootstrap can work on this phone and USB path.
 Two later attempts used an experimental `codesign`-based ramdisk and a modified
 operational sequence (extra USB probes, manual daemon handling, and a resumed
 partial iBSS transfer). Both disconnected during the large ramdisk upload, so
-they were not clean tests of the upstream workflow. That experiment has been
-removed. The active CFW is rebuilt with upstream's `ldid` commands, and
-`restore_cfw.sh`, `boot_rd.sh`, `boot.py`, and the working transfer code in
-`tools/usbliter8ctl` match upstream again. Only target paths, component names,
-and checked 24A435 patch offsets remain different. A full restore has not yet
-been retried with this clean build; the phone remains unchanged on iOS 26.6.
+they were not clean tests of the upstream workflow. That experiment was
+removed. A subsequent upstream-parity run uploaded every component, including
+the complete restore ramdisk and kernel, but the device did not enumerate as a
+restored-mode device after `bootx`; no erase or `StartRestore` occurred.
+
+The ensuing headless-IDA comparison found that every configured kernel, TXM,
+`restored_external`, and `asr` offset is the exact structural counterpart of
+the reference site. The actual lineage error was that the initial RC port
+followed `work-27.0b3`, while the repository's hardware-tested instructions use
+`work-27.0b2`. The active build now restores beta-2's nonce-preservation branch
+and its two restore-time baseband predicates, mapped to their verified 24A435
+locations. The CFW has been rebuilt and its postimages, signatures, and IMG4
+containers rechecked offline; this corrected build still needs its first
+hardware run. The phone remains unchanged on iOS 26.6.
 
 Target IPSW SHA-256:
 
@@ -112,6 +123,7 @@ transfer between the Waveshare handoff and `restore_cfw.sh`.
 | --- | ---: | --- |
 | iBSS + iBEC | `0x236e8`, `0x236ec` | IMG4 property validation return path |
 | iBSS + iBEC | `0x2aa0c`, `0x2aa10`, string at `0xd1158` | boot-args pointer and string |
+| iBSS + iBEC | `0x366a8` | preserve the recovery nonce (iBEC for restore; both stages for later boots) |
 | TXM | `0x3df48`, `0x3e0b0`, `0x3e244` | module-query signature comparisons |
 | TXM | `0x437b0`, `0x437b8` | constraints signature validation |
 | TXM | function `0x2fd04` | normal-boot pre-secure-channel allowance |
@@ -122,6 +134,7 @@ transfer between the Waveshare handoff and `restore_cfw.sh`.
 | kernel | function `0x1efbe80` | AMFI trust-cache result |
 | kernel | `0x2fed640` | unencrypted Data-volume check |
 | restored_external | `0x7e848` | FDR restore result |
+| restored_external | functions `0x49ddc`, `0x49e54` | report no legacy/current baseband during custom restore |
 | asr | `0x1f66c` | image signature result |
 
 `get_boot.py` also contains the 24A435 AppleSEPManager and

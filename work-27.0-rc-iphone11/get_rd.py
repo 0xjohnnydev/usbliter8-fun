@@ -31,6 +31,8 @@ if not os.path.exists("CFW/Firmware/dfu/iBSS.n104.RELEASE.im4p.bak"):
     os.system("cp CFW/Firmware/dfu/iBSS.n104.RELEASE.im4p CFW/Firmware/dfu/iBSS.n104.RELEASE.im4p.bak")
 os.system("../tools/img4 -i CFW/Firmware/dfu/iBSS.n104.RELEASE.im4p.bak -o Ramdisk/iBSS.raw")
 fp = open("Ramdisk/iBSS.raw", "r+b")
+# Keep nonce, as in the hardware-tested beta-2 boot chain.
+patch(0x366A8, 0x1400000A)      # b #0x28
 # patch image4_validate_property_callback # find func's epilogue by xref "Unknown ASN1 type %llu\n"
 patch(0x236E8, 0xd503201f)      # nop
 patch(0x236EC, 0xd2800000)      # mov x0, #0
@@ -45,6 +47,8 @@ if not os.path.exists("CFW/Firmware/dfu/iBEC.n104.RELEASE.im4p.bak"):
     os.system("cp CFW/Firmware/dfu/iBEC.n104.RELEASE.im4p CFW/Firmware/dfu/iBEC.n104.RELEASE.im4p.bak")
 os.system("../tools/img4 -i CFW/Firmware/dfu/iBEC.n104.RELEASE.im4p.bak -o iBEC.raw")
 fp = open("iBEC.raw", "r+b")
+# Keep nonce, as in the hardware-tested beta-2 boot chain.
+patch(0x366A8, 0x1400000A)      # b #0x28
 # patch image4_validate_property_callback
 patch(0x236E8, 0xd503201f)      # nop
 patch(0x236EC, 0xd2800000)      # mov x0, #0

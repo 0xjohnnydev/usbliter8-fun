@@ -15,6 +15,7 @@ _EXPECTED_HEX = {
         0x236EC: "e00314aa",
         0x2AA0C: "620800f0",
         0x2AA10: "423c3091",
+        0x366A8: "48010837",
         0xD1158: "00" * 64,
     },
     "iBEC.raw": {
@@ -22,6 +23,7 @@ _EXPECTED_HEX = {
         0x236EC: "e00314aa",
         0x2AA0C: "620800f0",
         0x2AA10: "423c3091",
+        0x366A8: "48010837",
         0xD1158: "00" * 64,
     },
     "TXM.raw": {
@@ -119,7 +121,13 @@ _EXPECTED_HEX = {
         0x39ABBFC: "0896fed0",
         0x39ABC00: "e00000b4",
     },
-    "restored_external": {0x7E848: "e0031aaa"},
+    "restored_external": {
+        0x49DDC: "7f2303d5",
+        0x49DE0: "f44fbea9",
+        0x49E54: "88150090",
+        0x49E58: "082947f9",
+        0x7E848: "e0031aaa",
+    },
     "asr": {0x1F66C: "895f0094"},
 }
 

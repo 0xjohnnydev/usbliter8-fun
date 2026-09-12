@@ -46,6 +46,8 @@ if not os.path.exists("CFW/Firmware/dfu/iBEC.n104.RELEASE.im4p.bak"):
     os.system("cp CFW/Firmware/dfu/iBEC.n104.RELEASE.im4p CFW/Firmware/dfu/iBEC.n104.RELEASE.im4p.bak")
 os.system("../tools/img4 -i CFW/Firmware/dfu/iBEC.n104.RELEASE.im4p.bak -o iBEC.raw")
 fp = open("iBEC.raw", "r+b")
+# Keep the recovery nonce, matching the hardware-tested beta-2 restore chain.
+patch(0x366A8, 0x1400000A)      # b #0x28
 # patch image4_validate_property_callback
 patch(0x236E8, 0xd503201f)      # nop
 patch(0x236EC, 0xd2800000)      # mov x0, #0
@@ -81,6 +83,12 @@ subprocess.run(
 fp = open("CFW_RD/usr/local/bin/restored_external", "r+b")
 # patch "force fdr step to always succeed." xref "RestoredFDRRecover" - https://github.com/mineek/seprmvr64/tree/v2
 patch(0x7e848, 0xd2800000)      # mov x0, #0
+# Match the hardware-tested beta-2 restore behavior: this custom restore does
+# not update the device's baseband or create a Baseband Data volume.
+patch(0x49e54, 0xd2800000)      # _ramrod_device_has_baseband: mov x0, #0
+patch(0x49e58, 0xd65f03c0)      # ret
+patch(0x49ddc, 0xd2800000)      # _ramrod_device_has_baseband_legacy: mov x0, #0
+patch(0x49de0, 0xd65f03c0)      # ret
 # patch _ramrod_device_has_sep
 # patch(0x543F4  , 0xd2800000)      # mov x0, #0  # XXXXXXXXXXXXXX THIS IS THE PROBLEM STUCK
 # patch(0x543F4+4, 0xd65f03c0)      # ret       # XXXXXXXXXXXXXX THIS IS THE PROBLEM STUCK
