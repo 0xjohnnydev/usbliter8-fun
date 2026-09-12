@@ -7,6 +7,7 @@
 **/Ramdisk/
 **/Ramdisk_*/
 **/CFW/
+**/CFW_DIAG_*/
 **/CFW_RD/
 **/blobs/
 *.raw
@@ -28,6 +29,7 @@ t8030_apticket.der
 *.author.bak
 *.orig
 *.log
+**/diagnostic-logs/
 .irecovery
 
 # ===== Binary build được từ source trong repo (xem BUILD.md) =====

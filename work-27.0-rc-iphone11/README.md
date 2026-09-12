@@ -39,6 +39,13 @@ filesystem restore. It was recovered to its unchanged iOS 26.6 installation via
 Apple recovery mode. The next step is to isolate the failing restore-boot stage;
 do not treat the current offsets as hardware-validated yet.
 
+The failure occurred after iBSS, iBEC, and every restore component upload had
+completed, at the restore kernel's `bootx` transition. The restore ramdisk's two
+patched executables also lost Apple's self launch-constraint blobs when `ldid`
+re-signed them. Because `restored_external` is the ramdisk's main launch daemon
+and provides the restored protocol used for Mac enumeration, that is a leading
+candidate, but the kernel, DeviceTree, and TXM still need to be isolated too.
+
 Target IPSW SHA-256:
 
 ```text
@@ -91,6 +98,35 @@ python3 tss_proxy_server.py
 Do not start `restore_cfw.sh` merely to test the scripts: it invokes an erase
 restore. The safe stopping point for offline preparation is after building and
 inspecting the CFW/Ramdisk outputs.
+
+## Non-erasing restore-boot diagnosis
+
+`prepare_restore_boot_variants.sh` makes copy-on-write CFW variants that add the
+ported restore-OS patches cumulatively: stock Apple restore components, patched
+kernel, patched DeviceTree, patched TXM, and finally the current patched
+ramdisk. `diagnose_restore_boot.sh` targets this phone's ECID, verifies PWN DFU,
+and invokes `idevicerestore` with both `-e` and `-z`. `-e` selects the exact
+Customer Erase boot identity used by the failed bring-up, while `-z` returns as
+soon as restored mode enumerates and before `restore_device()` sends
+`StartRestore`; no filesystem restore is begun.
+
+Prepare the variants offline:
+
+```sh
+./prepare_restore_boot_variants.sh
+```
+
+Then, only after the phone has been put back into PWN DFU, boot the stock
+restore baseline first:
+
+```sh
+USBLITER8_PYTHON=/path/to/python-with-pyusb ./diagnose_restore_boot.sh 1-stock
+```
+
+After each successful test, reboot the temporary restore environment and return
+to PWN DFU before advancing through `2-kernel`, `3-kernel-dt`,
+`4-kernel-dt-txm`, and `5-current`. The first stage that fails identifies the
+component class responsible without erasing the phone.
 
 ## Ported patch landmarks
 

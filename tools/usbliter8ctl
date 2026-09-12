@@ -57,6 +57,20 @@ def do_demote(args):
     dev = open_device()
     dev.ctrl_transfer(0x21, CUSTOM_DEMOTE, 0, 0, None, 100)
 
+def do_status(args):
+    """Fail-closed, read-only check for the expected PWN DFU device."""
+    dev = open_device()
+    srnm = dev.serial_number
+
+    if args.expect_ecid is not None:
+        expected = f"ECID:{int(args.expect_ecid, 0):016X}"
+        if expected not in srnm.upper():
+            raise RuntimeError(
+                f"wrong PWN DFU device: expected {expected}, got {srnm}"
+            )
+
+    print(srnm)
+
 def main():
     parser = argparse.ArgumentParser(description="Love is Control")
 
@@ -68,6 +82,15 @@ def main():
 
     demote_parser = subparsers.add_parser("demote", help="demote production mode")
     demote_parser.set_defaults(func=do_demote)
+
+    status_parser = subparsers.add_parser(
+        "status", help="verify a device is in PWN DFU without changing it"
+    )
+    status_parser.set_defaults(func=do_status)
+    status_parser.add_argument(
+        "--expect-ecid",
+        help="fail unless the serial descriptor contains this ECID",
+    )
 
     args = parser.parse_args()
     if not hasattr(args, "func"):
