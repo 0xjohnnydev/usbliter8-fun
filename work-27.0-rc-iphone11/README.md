@@ -30,6 +30,15 @@ Apple-service functionality unavailable.
   `userland_patches.py`. A wrong build, stale artifact, or already-patched input
   stops with a mismatch instead of being written again.
 
+## Hardware bring-up status
+
+The first restore attempt on an iPhone 11 running iOS 26.6 reached PWN DFU,
+obtained a valid 24A435 erase ticket, and uploaded the restore boot chain. The
+phone did not re-enumerate into restore mode, so `idevicerestore` never began the
+filesystem restore. It was recovered to its unchanged iOS 26.6 installation via
+Apple recovery mode. The next step is to isolate the failing restore-boot stage;
+do not treat the current offsets as hardware-validated yet.
+
 Target IPSW SHA-256:
 
 ```text
