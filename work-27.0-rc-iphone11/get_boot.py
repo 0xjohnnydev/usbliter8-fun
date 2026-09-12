@@ -86,7 +86,7 @@ os.system("../tools/img4 -i CFW/Firmware/AOP/aopfw-iphone12baop.RELEASE.im4p.bak
 # AVE
 if not os.path.exists("CFW/Firmware/ave/AppleAVE2FW_H12.im4p.bak"):
     os.system("cp CFW/Firmware/ave/AppleAVE2FW_H12.im4p CFW/Firmware/ave/AppleAVE2FW_H12.im4p.bak")
-    os.system("../tools/img4 -i CFW/Firmware/ave/AppleAVE2FW_H12.im4p.bak -o Ramdisk/AVE.img4 -M t8030_apticket.der -T avef")
+os.system("../tools/img4 -i CFW/Firmware/ave/AppleAVE2FW_H12.im4p.bak -o Ramdisk/AVE.img4 -M t8030_apticket.der -T avef")
 
 # SPTM
 if not os.path.exists("CFW/Firmware/sptm.t8030.release.im4p.bak"):

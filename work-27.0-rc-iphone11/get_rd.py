@@ -75,7 +75,7 @@ os.system("../tools/img4 -i CFW/Firmware/AOP/aopfw-iphone12baop.RELEASE.im4p.bak
 # AVE
 if not os.path.exists("CFW/Firmware/ave/AppleAVE2FW_H12.im4p.bak"):
     os.system("cp CFW/Firmware/ave/AppleAVE2FW_H12.im4p CFW/Firmware/ave/AppleAVE2FW_H12.im4p.bak")
-    os.system("../tools/img4 -i CFW/Firmware/ave/AppleAVE2FW_H12.im4p.bak -o Ramdisk/AVE.img4 -M t8030_apticket.der -T avef")
+os.system("../tools/img4 -i CFW/Firmware/ave/AppleAVE2FW_H12.im4p.bak -o Ramdisk/AVE.img4 -M t8030_apticket.der -T avef")
 
 # SPTM
 if not os.path.exists("CFW/Firmware/sptm.t8030.release.im4p.bak"):
@@ -154,25 +154,82 @@ if not os.path.exists("CFW/043-69915-775.dmg.bak"):
     os.system("cp CFW/043-69915-775.dmg CFW/043-69915-775.dmg.bak")
 # 8. Grab ramdisk & build custom ramdisk
 os.system("pyimg4 im4p extract -i CFW/043-69915-775.dmg.bak -o ramdisk.dmg")
-#
-os.system("mkdir SSHRD")
-os.system("sudo hdiutil attach -mountpoint SSHRD ramdisk.dmg -owners off")
-os.system("sudo hdiutil create -size 254m -imagekey diskimage-class=CRawDiskImage -format UDZO -fs APFS -layout NONE -srcfolder SSHRD -copyuid root ramdisk1.dmg")
-os.system("sudo hdiutil detach -force SSHRD")
-os.system("sudo hdiutil attach -mountpoint SSHRD ramdisk1.dmg -owners off")
-# sys.stdin.read(1)
-#remove unneccessary files for expand space
-os.system("sudo ../tools/gtar -x --no-overwrite-dir -f ssh.tar.gz -C SSHRD/")
-os.system("rm SSHRD/usr/bin/img4tool")
-os.system("rm SSHRD/usr/bin/img4")
-os.system("rm SSHRD/usr/sbin/dietappleh13camerad")
-os.system("rm SSHRD/usr/sbin/dietappleh16camerad")
-os.system("rm SSHRD/usr/local/bin/wget")
-os.system("rm SSHRD/usr/local/bin/procexp")
-# Fix sftp-server not working
-os.system(f"../tools/ldid_macosx_arm64 -Ssftp_server_ents.plist -M -Cadhoc SSHRD/usr/libexec/sftp-server")
-os.system("sudo hdiutil detach -force SSHRD")
-os.system("sudo hdiutil resize -sectors min ramdisk1.dmg")
+Path("SSHRD").mkdir(exist_ok=True)
+subprocess.run(
+    ["sudo", "hdiutil", "attach", "-mountpoint", "SSHRD", "ramdisk.dmg", "-owners", "off"],
+    check=True,
+)
+try:
+    subprocess.run(
+        [
+            "sudo",
+            "hdiutil",
+            "create",
+            "-size",
+            "254m",
+            "-imagekey",
+            "diskimage-class=CRawDiskImage",
+            "-format",
+            "UDZO",
+            "-fs",
+            "APFS",
+            "-layout",
+            "NONE",
+            "-srcfolder",
+            "SSHRD",
+            "-copyuid",
+            "root",
+            "ramdisk1.dmg",
+        ],
+        check=True,
+    )
+finally:
+    subprocess.run(["sudo", "hdiutil", "detach", "-force", "SSHRD"], check=True)
+
+subprocess.run(
+    ["sudo", "hdiutil", "attach", "-mountpoint", "SSHRD", "ramdisk1.dmg", "-owners", "off"],
+    check=True,
+)
+# The bundled tools/gtar is x86_64-only and cannot execute on Apple Silicon.
+# macOS bsdtar handles this archive correctly; check the extraction so a missing
+# SSH payload cannot silently produce a useless ramdisk.
+try:
+    subprocess.run(
+        ["sudo", "/usr/bin/tar", "-xzf", "ssh.tar.gz", "-C", "SSHRD"],
+        check=True,
+    )
+
+    dropbear = Path("SSHRD/usr/local/bin/dropbear")
+    sftp_server = Path("SSHRD/usr/libexec/sftp-server")
+    if not dropbear.is_file() or not sftp_server.is_file():
+        raise RuntimeError("SSH payload extraction failed: dropbear or sftp-server is missing")
+
+    # Remove optional utilities to leave more free space in the ramdisk.
+    for relative in (
+        "usr/bin/img4tool",
+        "usr/bin/img4",
+        "usr/sbin/dietappleh13camerad",
+        "usr/sbin/dietappleh16camerad",
+        "usr/local/bin/wget",
+        "usr/local/bin/procexp",
+    ):
+        Path("SSHRD", relative).unlink(missing_ok=True)
+
+    # Fix sftp-server not working.
+    subprocess.run(
+        [
+            "../tools/ldid_macosx_arm64",
+            "-Ssftp_server_ents.plist",
+            "-M",
+            "-Cadhoc",
+            str(sftp_server),
+        ],
+        check=True,
+    )
+finally:
+    subprocess.run(["sudo", "hdiutil", "detach", "-force", "SSHRD"], check=True)
+
+subprocess.run(["sudo", "hdiutil", "resize", "-sectors", "min", "ramdisk1.dmg"], check=True)
 # sign
 os.system("pyimg4 im4p create -i ramdisk1.dmg -o ramdisk1.dmg.im4p -f rdsk")
 os.system("pyimg4 img4 create -p ramdisk1.dmg.im4p -o Ramdisk/RestoreRamdisk.img4 -m t8030_apticket.der")

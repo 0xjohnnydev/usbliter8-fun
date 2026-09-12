@@ -18,6 +18,14 @@ Apple-service functionality unavailable.
 - A complete offline `make_cfw.py` build finished successfully. The rebuilt
   IMG4/PAYP metadata parses, all 35 CFW postimages match the requested patches,
   and the repacked DeviceTree matches the verified transform byte-for-byte.
+- A device-specific erase ticket was requested from Apple while the test phone
+  was in PWN DFU. Its ECID, board/chip IDs, AP nonce, SEP nonce, and all 17 image
+  types consumed by the ramdisk/boot builders match this phone and the 24A435
+  Customer Erase manifest. The ticket remains ignored by Git.
+- A complete `get_rd.py` build finished on Apple Silicon. All 18 expected
+  ramdisk outputs are non-empty, every signed IMG4 reports the expected type,
+  and a read-only extraction of `RestoreRamdisk.img4` contains executable arm64
+  Dropbear and SFTP server binaries.
 - Each binary write is guarded by an expected preimage in `checked_patch.py` or
   `userland_patches.py`. A wrong build, stale artifact, or already-patched input
   stops with a mismatch instead of being written again.
@@ -50,7 +58,9 @@ Then extract it:
 
 The later ramdisk and normal-boot builders require a device-specific,
 build-compatible `t8030_apticket.der` in this directory. It is intentionally
-ignored by Git and is not copied from the upstream beta build.
+ignored by Git and is not copied from the upstream beta build. `get_rd.py` uses
+the native macOS `/usr/bin/tar` because the inherited `tools/gtar` executable is
+x86_64-only; extraction is checked so a missing SSH payload stops the build.
 
 ## Bring-up order
 
