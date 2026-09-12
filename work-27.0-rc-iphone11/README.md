@@ -41,7 +41,7 @@ Target IPSW SHA-256:
 Install the upstream Python dependencies:
 
 ```sh
-python3 -m pip install requests pyimg4 pymobiledevice3
+python3 -m pip install requests pyimg4 pymobiledevice3 pyusb
 ```
 
 From this directory, validate the local IPSW without extracting it:
