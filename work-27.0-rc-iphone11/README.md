@@ -33,30 +33,21 @@ Apple-service functionality unavailable.
 ## Hardware bring-up status
 
 The first restore attempt on an iPhone 11 running iOS 26.6 reached PWN DFU,
-obtained a valid 24A435 erase ticket, and uploaded the restore boot chain. The
-phone did not re-enumerate into restore mode, so `idevicerestore` never began the
-filesystem restore. It was recovered to its unchanged iOS 26.6 installation via
-Apple recovery mode. The next step is to isolate the failing restore-boot stage;
-do not treat the current offsets as hardware-validated yet.
+obtained a valid 24A435 erase ticket, and uploaded the complete restore boot
+chain, but the phone did not re-enumerate after `bootx`. A later non-erasing boot
+with the same patched iBSS/iBEC and Apple's stock restore components reached
+restored protocol version 15, confirming that the exploit, ticket flow, and
+bootstrap can work on this phone and USB path.
 
-The failure occurred after iBSS, iBEC, and every restore component upload had
-completed, at the restore kernel's `bootx` transition. The restore ramdisk's two
-patched executables also lost Apple's self launch-constraint blobs when `ldid`
-re-signed them. Because `restored_external` is the ramdisk's main launch daemon
-and provides the restored protocol used for Mac enumeration, that is a leading
-candidate, but the kernel, DeviceTree, and TXM still need to be isolated too.
-
-The ramdisk signing step now uses macOS `codesign` with explicit metadata
-preservation. The patched executables retain the original
-`com.apple.restored_external` and `com.apple.asr` identifiers and entitlements;
-`restored_external` also retains its Apple self launch constraint. Each new
-ad-hoc signature is verified before the ramdisk is repacked.
-
-A non-erasing `-z` hardware boot using the stock restore ramdisk, DeviceTree,
-TXM, and kernel subsequently reached restored protocol version 15. This rules
-out the usbliter8 exploit, patched iBSS/iBEC, ticket flow, USB path, and Apple's
-unmodified restore environment. The metadata-preserving ramdisk rebuild is the
-current corrected CFW; a full erase restore with it has not yet been run.
+Two later attempts used an experimental `codesign`-based ramdisk and a modified
+operational sequence (extra USB probes, manual daemon handling, and a resumed
+partial iBSS transfer). Both disconnected during the large ramdisk upload, so
+they were not clean tests of the upstream workflow. That experiment has been
+removed. The active CFW is rebuilt with upstream's `ldid` commands, and
+`restore_cfw.sh`, `boot_rd.sh`, `boot.py`, and the working transfer code in
+`tools/usbliter8ctl` match upstream again. Only target paths, component names,
+and checked 24A435 patch offsets remain different. A full restore has not yet
+been retried with this clean build; the phone remains unchanged on iOS 26.6.
 
 Target IPSW SHA-256:
 
@@ -111,34 +102,9 @@ Do not start `restore_cfw.sh` merely to test the scripts: it invokes an erase
 restore. The safe stopping point for offline preparation is after building and
 inspecting the CFW/Ramdisk outputs.
 
-## Non-erasing restore-boot diagnosis
-
-`prepare_restore_boot_variants.sh` makes copy-on-write CFW variants that add the
-ported restore-OS patches cumulatively: stock Apple restore components, patched
-kernel, patched DeviceTree, patched TXM, and finally the current patched
-ramdisk. `diagnose_restore_boot.sh` targets this phone's ECID, verifies PWN DFU,
-and invokes `idevicerestore` with both `-e` and `-z`. `-e` selects the exact
-Customer Erase boot identity used by the failed bring-up, while `-z` returns as
-soon as restored mode enumerates and before `restore_device()` sends
-`StartRestore`; no filesystem restore is begun.
-
-Prepare the variants offline:
-
-```sh
-./prepare_restore_boot_variants.sh
-```
-
-Then, only after the phone has been put back into PWN DFU, boot the stock
-restore baseline first:
-
-```sh
-USBLITER8_PYTHON=/path/to/python-with-pyusb ./diagnose_restore_boot.sh 1-stock
-```
-
-After each successful test, reboot the temporary restore environment and return
-to PWN DFU before advancing through `2-kernel`, `3-kernel-dt`,
-`4-kernel-dt-txm`, and `5-current`. The first stage that fails identifies the
-component class responsible without erasing the phone.
+For a hardware run, execute the inherited flow once from fresh PWN DFU. Do not
+insert a status probe, manually stop macOS USB daemons, or resume a partial
+transfer between the Waveshare handoff and `restore_cfw.sh`.
 
 ## Ported patch landmarks
 

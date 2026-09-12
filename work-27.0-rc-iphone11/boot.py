@@ -1,10 +1,8 @@
 #!/bin/zsh
-set -e
-
-../tools/usbliter8ctl boot ./Ramdisk/iBSS.raw
-sleep 3
-irecovery -f Ramdisk/iBEC.img4
-irecovery -c go
+../tools/usbliter8ctl boot ./Ramdisk/iBSS.raw;
+sleep 3;
+irecovery -f Ramdisk/iBEC.img4;
+irecovery -c go;
 
 sleep 2;
 irecovery -f Ramdisk/RestoreLogo.img4;

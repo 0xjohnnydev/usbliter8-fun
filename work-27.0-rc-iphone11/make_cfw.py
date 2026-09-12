@@ -11,41 +11,6 @@ from checked_patch import checked_patch
 fp = None
 
 
-def sign_preserving_apple_metadata(path, identifier, require_self_constraint=False):
-    """Ad-hoc re-sign without discarding iOS 27 launch metadata."""
-    subprocess.run(
-        [
-            "/usr/bin/codesign",
-            "--force",
-            "--sign",
-            "-",
-            "--preserve-metadata="
-            "identifier,entitlements,requirements,flags,"
-            "launch-constraints,library-constraints",
-            path,
-        ],
-        check=True,
-    )
-    subprocess.run(
-        ["/usr/bin/codesign", "--verify", "--verbose=4", path],
-        check=True,
-    )
-
-    display = subprocess.run(
-        ["/usr/bin/codesign", "--display", "--verbose=5", path],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    metadata = display.stdout + display.stderr
-    if f"Identifier={identifier}" not in metadata:
-        raise RuntimeError(f"codesign did not preserve {identifier} for {path}")
-    if require_self_constraint and "Has Self Launch Constraints" not in metadata:
-        raise RuntimeError(
-            f"codesign did not preserve the self launch constraint for {path}"
-        )
-
-
 def patch(offset, data):
     file_offset = offset
 
@@ -120,21 +85,15 @@ patch(0x7e848, 0xd2800000)      # mov x0, #0
 # patch(0x543F4  , 0xd2800000)      # mov x0, #0  # XXXXXXXXXXXXXX THIS IS THE PROBLEM STUCK
 # patch(0x543F4+4, 0xd65f03c0)      # ret       # XXXXXXXXXXXXXX THIS IS THE PROBLEM STUCK
 fp.close()
-# Preserve Apple's identifier, entitlements, and self launch constraint while
-# replacing the invalidated CodeDirectory. Bare ldid -S stripped this metadata
-# and could prevent the restore daemon from launching early enough to enumerate.
-sign_preserving_apple_metadata(
-    "CFW_RD/usr/local/bin/restored_external",
-    "com.apple.restored_external",
-    require_self_constraint=True,
-)
+# Match the upstream signing path exactly.
+os.system("../tools/ldid_macosx_arm64 -S -M -Cadhoc CFW_RD/usr/local/bin/restored_external")
 # patch /usr/sbin/asr
 fp = open("CFW_RD/usr/sbin/asr", "r+b")
 # patch "Image failed signature verification." ...
 patch(0x1f66c, 0xd503201f)      # nop
 fp.close()
-# Preserve the original com.apple.asr identity and signature metadata too.
-sign_preserving_apple_metadata("CFW_RD/usr/sbin/asr", "com.apple.asr")
+# Match the upstream signing path exactly.
+os.system("../tools/ldid_macosx_arm64 -S -M -Cadhoc CFW_RD/usr/sbin/asr")
 subprocess.run(["hdiutil", "detach", "-force", "CFW_RD"], check=True)
 os.system("pyimg4 im4p create -i ramdisk.dmg -o CFW/043-69915-775.dmg -f rdsk")
 
