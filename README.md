@@ -4,7 +4,12 @@
 >
 > Running this (restoring a custom firmware) will delete your entire device and break everything: SEP, passcode, Wifi, Baseband, Bluetooth (partially work) and the entire Apple services, so please don't run it on your main device, ONLY do it on a spare **iPhone 11 Pro** only. This tutorial only targets developers that enjoy breaking their device!
 
-Currently only **iPhone 11 Pro** is supported. Other devices require finding the correct offsets to make it work.
+The upstream workflow is currently hardware-tested only on **iPhone 11 Pro**.
+This fork also contains an **experimental, offline-verified iPhone 11 port for
+iOS 27.0 build 24A435** in
+[`work-27.0-rc-iphone11`](work-27.0-rc-iphone11/README.md). It has fail-closed
+offset checks but still needs its first complete restore/boot test on a spare
+device.
 
 ## Hardware setup
 
