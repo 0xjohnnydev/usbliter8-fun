@@ -15,6 +15,9 @@ Apple-service functionality unavailable.
 - Every firmware path used by the build scripts exists in the iPhone 11 IPSW.
 - iBSS/iBEC, TXM, kernelcache, restore ramdisk, and userland patch sites were
   matched to their 24A435 instructions.
+- A complete offline `make_cfw.py` build finished successfully. The rebuilt
+  IMG4/PAYP metadata parses, all 35 CFW postimages match the requested patches,
+  and the repacked DeviceTree matches the verified transform byte-for-byte.
 - Each binary write is guarded by an expected preimage in `checked_patch.py` or
   `userland_patches.py`. A wrong build, stale artifact, or already-patched input
   stops with a mismatch instead of being written again.
