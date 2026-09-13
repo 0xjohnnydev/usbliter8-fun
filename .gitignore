@@ -21,6 +21,7 @@ DeviceTree*.raw
 t8030_apticket.der
 *.der
 *.der.*
+post-restore-tss*.plist
 
 # ===== Backups / logs / tmp =====
 *.bak

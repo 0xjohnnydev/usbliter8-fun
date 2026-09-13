@@ -152,7 +152,18 @@ The later ramdisk and normal-boot builders require a device-specific,
 build-compatible `t8030_apticket.der` in this directory. It is intentionally
 ignored by Git and is not copied from the upstream beta build. `get_rd.py` uses
 the native macOS `/usr/bin/tar` because the inherited `tools/gtar` executable is
-x86_64-only; extraction is checked so a missing SSH payload stops the build.
+x86_64-only. The image is mounted with ownership disabled, so the SSH ramdisk
+can be built without `sudo`; extraction is checked so a missing SSH payload
+stops the build.
+
+The ticket must be refreshed after every successful restore. A ticket captured
+before the restore can pass the patched early boot chain and still stall after
+the verbose kernel log clears, leaving a lit black display and no USB device.
+Dump the post-restore ticket from Preboot with the SSH ramdisk as described in
+the repository tutorial, then rerun `get_boot.py`. While Apple is still signing
+the build, the same ticket can instead be requested with the AP and SEP nonces
+recorded by the successful restore log; validate its ECID, `N104AP` target,
+build, both nonces, and TSS signature before replacing the old ticket.
 
 ## Bring-up order
 

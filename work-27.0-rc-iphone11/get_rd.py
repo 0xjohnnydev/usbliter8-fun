@@ -160,13 +160,12 @@ if not os.path.exists("CFW/043-69915-775.dmg.bak"):
 os.system("pyimg4 im4p extract -i CFW/043-69915-775.dmg.bak -o ramdisk.dmg")
 Path("SSHRD").mkdir(exist_ok=True)
 subprocess.run(
-    ["sudo", "hdiutil", "attach", "-mountpoint", "SSHRD", "ramdisk.dmg", "-owners", "off"],
+    ["hdiutil", "attach", "-mountpoint", "SSHRD", "ramdisk.dmg", "-owners", "off"],
     check=True,
 )
 try:
     subprocess.run(
         [
-            "sudo",
             "hdiutil",
             "create",
             "-size",
@@ -188,10 +187,10 @@ try:
         check=True,
     )
 finally:
-    subprocess.run(["sudo", "hdiutil", "detach", "-force", "SSHRD"], check=True)
+    subprocess.run(["hdiutil", "detach", "-force", "SSHRD"], check=True)
 
 subprocess.run(
-    ["sudo", "hdiutil", "attach", "-mountpoint", "SSHRD", "ramdisk1.dmg", "-owners", "off"],
+    ["hdiutil", "attach", "-mountpoint", "SSHRD", "ramdisk1.dmg", "-owners", "off"],
     check=True,
 )
 # The bundled tools/gtar is x86_64-only and cannot execute on Apple Silicon.
@@ -199,7 +198,7 @@ subprocess.run(
 # SSH payload cannot silently produce a useless ramdisk.
 try:
     subprocess.run(
-        ["sudo", "/usr/bin/tar", "-xzf", "ssh.tar.gz", "-C", "SSHRD"],
+        ["/usr/bin/tar", "-xzf", "ssh.tar.gz", "-C", "SSHRD"],
         check=True,
     )
 
@@ -231,9 +230,9 @@ try:
         check=True,
     )
 finally:
-    subprocess.run(["sudo", "hdiutil", "detach", "-force", "SSHRD"], check=True)
+    subprocess.run(["hdiutil", "detach", "-force", "SSHRD"], check=True)
 
-subprocess.run(["sudo", "hdiutil", "resize", "-sectors", "min", "ramdisk1.dmg"], check=True)
+subprocess.run(["hdiutil", "resize", "-sectors", "min", "ramdisk1.dmg"], check=True)
 # sign
 os.system("pyimg4 im4p create -i ramdisk1.dmg -o ramdisk1.dmg.im4p -f rdsk")
 os.system("pyimg4 img4 create -p ramdisk1.dmg.im4p -o Ramdisk/RestoreRamdisk.img4 -m t8030_apticket.der")

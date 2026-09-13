@@ -110,6 +110,10 @@ find /mnt6 -name sep-firmware.img4
 ../tools/img4tool -e -m t8030_apticket.der dev_sep.img4
 ```
 
+Repeat this ticket dump after every successful restore. Reusing the ticket from
+before a restore can let the patched boot chain reach verbose kernel output but
+then leave the phone on a lit black screen with no normal USB enumeration.
+
 The SSHRD log will print on screen, that means SSHRD succeeded.
 
 ### 3. Normal boot
