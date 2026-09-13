@@ -4,10 +4,10 @@ This directory is the experimental `usbliter8-fun` port for the **iPhone 11**
 (`iPhone12,1`, `n104ap`, `t8030`) on **iOS 27.0 build 24A435**.
 
 The IPSW paths and byte offsets have been ported and checked against the local
-24A435 restore image. They have not yet been validated by a complete restore and
-boot on physical hardware. Treat this as bring-up code, use a spare device, and
-expect the custom restore to erase it and leave normal SEP, passcode, radio, and
-Apple-service functionality unavailable.
+24A435 restore image. The corrected restore patch set completed a full erase
+restore on a physical iPhone 11 on 2026-09-12. Treat this as bring-up code, use a
+spare device, and expect the custom image to leave normal SEP, passcode, radio,
+and Apple-service functionality unavailable.
 
 ## What was verified offline
 
@@ -34,6 +34,14 @@ Apple-service functionality unavailable.
   stops with a mismatch instead of being written again.
 
 ## Hardware bring-up status
+
+The first complete hardware validation succeeded on an iPhone 11 (`n104ap`).
+With the corrected AMFI branch at kernel file offset `0x1f0897c`, the device
+entered `com.apple.mobile.restored` protocol 15, accepted the RootTicket,
+validated and restored the filesystem, installed Cryptex, kernelcache, and
+DeviceTree, sealed the System volume, and ended with `Status: Restore Finished`,
+`DONE`, and host exit status 0. This confirms the restore-time offset set and
+the semantic AMFI fix on 24A435.
 
 The first restore attempt on an iPhone 11 running iOS 26.6 reached PWN DFU,
 obtained a valid 24A435 erase ticket, and uploaded the complete restore boot
@@ -71,9 +79,10 @@ launch constraints. It also explicitly retains the stock 4096-byte
 CodeDirectory page size and the restore ramdisk's `desc: 0` IM4P metadata. The
 rebuilt ramdisk passes `codesign --verify`, retains all eight special slots on
 `restored_external`, and still contains every checked binary patch, but that
-metadata-preserving image produced the same post-`bootx` failure. The AMFI
-branch error above is the first offset/instruction error that directly explains
-why the ad-hoc-signed restore executables could not launch.
+metadata-preserving image produced the same post-`bootx` failure. The next clean
+run included the corrected AMFI branch and completed the restore, confirming
+that the inverted RC control flow—not the preserved signature metadata—was the
+blocking defect.
 
 Target IPSW SHA-256:
 
@@ -123,6 +132,10 @@ python3 tss_proxy_server.py
 ./get_boot.py
 ./boot.py
 ```
+
+`restore_cfw.sh` deliberately fails before touching USB unless its selected
+Python has PyUSB. Activate the dependency environment first, or set
+`USBLITER8_PYTHON` to that environment's Python executable.
 
 Do not start `restore_cfw.sh` merely to test the scripts: it invokes an erase
 restore. The safe stopping point for offline preparation is after building and
