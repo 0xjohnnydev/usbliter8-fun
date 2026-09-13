@@ -79,7 +79,7 @@ enumerates USB, proving that execution has passed from iBoot into XNU. The
 upstream `serial=3` argument makes XNU switch from its video console to the
 hardware serial console, which hides the stopping line without a serial capture
 cable. The normal-boot iBSS/iBEC arguments now keep `-v`, add `keepsyms=1`, and
-omit `serial=3` so the next hardware run exposes kernel progress on screen.
+omit `serial=3` so hardware runs expose kernel progress on screen.
 
 A verified SSHRD boot after the successful restore recovered the exact
 RootTicket installed in Preboot. Its SHA-256 is
@@ -96,8 +96,13 @@ The normal chain has now been rebuilt with the exact installed RootTicket and
 locked in `boot-artifacts.sha256`. Extracting the inner IM4P from every signed
 image confirms that all 17 boot payloads are byte-for-byte identical to the
 previous normal bundle; only their server-issued personalization changed. This
-leaves the installed-ticket handoff as the one intentional variable in the
-next hardware boot, which has not yet been run.
+left the installed-ticket handoff as the one intentional variable for the next
+test. On 2026-09-13, a clean exact-ticket run verified every locked artifact,
+uploaded the complete normal chain through `bootx`, and exited successfully.
+About 20 seconds later the phone enumerated as a normal Apple iPhone USB device
+(`idProduct 0x12a8`), and usbmux identified it as `iPhone12,1` running iOS 27.0
+build 24A435. This resolves the prior post-`bootx` no-USB stall and validates
+using the RootTicket actually installed by the restore.
 
 The first restore attempt on an iPhone 11 running iOS 26.6 reached PWN DFU,
 obtained a valid 24A435 erase ticket, and uploaded the complete restore boot

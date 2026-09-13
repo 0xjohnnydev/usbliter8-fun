@@ -13,7 +13,9 @@ boot now carries the beta-2-only kernel and DeviceTree behavior with
 fail-closed offset checks. Post-restore SSHRD diagnostics recovered and
 validated the exact RootTicket installed in Preboot. The normal chain has been
 rebuilt with that ticket, and all 17 inner boot payloads match the previously
-audited bundle byte-for-byte; the first exact-ticket hardware boot is pending.
+audited bundle byte-for-byte. A clean exact-ticket hardware run now completes
+`bootx` and enumerates in normal usbmux mode as `iPhone12,1` on iOS 27.0 build
+24A435, resolving the previous post-boot lit-black/no-USB stall.
 
 ## Hardware setup
 
