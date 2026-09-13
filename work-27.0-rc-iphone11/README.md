@@ -160,10 +160,11 @@ The ticket must be refreshed after every successful restore. A ticket captured
 before the restore can pass the patched early boot chain and still stall after
 the verbose kernel log clears, leaving a lit black display and no USB device.
 Dump the post-restore ticket from Preboot with the SSH ramdisk as described in
-the repository tutorial, then rerun `get_boot.py`. While Apple is still signing
-the build, the same ticket can instead be requested with the AP and SEP nonces
-recorded by the successful restore log; validate its ECID, `N104AP` target,
-build, both nonces, and TSS signature before replacing the old ticket.
+the repository tutorial, then rerun `get_boot.py`. A new signing request made
+with the AP and SEP nonces from the successful restore can produce a valid
+ticket, but it also receives a new TSS server nonce (`srvn`) and is not
+byte-identical to the RootTicket installed during that restore. Use the exact
+ticket embedded in Preboot while diagnosing a post-restore boot failure.
 
 ## Bring-up order
 
@@ -177,10 +178,19 @@ python3 tss_proxy_server.py
 
 ./get_rd.py
 ./boot_rd.sh
+./collect_sshrd_state.sh
 
 ./get_boot.py
 ./boot.py
 ```
+
+`get_rd.py` replaces `Ramdisk`, so preserve a known normal-boot directory
+before running it. `boot_rd.sh` verifies the complete SSHRD transfer set against
+`sshrd-artifacts.sha256` before opening USB. After the ramdisk reaches SSH,
+`collect_sshrd_state.sh` mounts Preboot and Data read-only, validates the exact
+installed ticket against the successful restore identity and nonces, and saves
+recent panic/boot evidence under `diagnostic-logs/sshrd-<timestamp>/`. It does
+not replace the local ticket or modify the phone.
 
 The restore and tethered-boot launchers deliberately fail before touching USB
 unless their selected Python has PyUSB. Activate the dependency environment

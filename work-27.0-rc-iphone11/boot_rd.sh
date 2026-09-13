@@ -1,6 +1,16 @@
 #!/bin/zsh
 set -e
 
+SCRIPT_DIR=${0:A:h}
+cd "$SCRIPT_DIR"
+
+if ! artifact_check=$(shasum -a 256 -c sshrd-artifacts.sha256 2>&1); then
+    print -u2 -- "$artifact_check"
+    print -u2 "SSHRD artifact verification failed; refusing to touch the device"
+    exit 1
+fi
+print "Verified SSHRD artifacts for iPhone12,1 24A435"
+
 PYUSB_PYTHON=${USBLITER8_PYTHON:-python3}
 if ! "$PYUSB_PYTHON" -c 'import usb' >/dev/null 2>&1; then
     print -u2 "Python '$PYUSB_PYTHON' does not have PyUSB; refusing to touch the device"

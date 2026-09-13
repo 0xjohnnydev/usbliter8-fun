@@ -1,0 +1,34 @@
+#!/usr/bin/expect -f
+
+if {![info exists env(SSHRD_PASSWORD)]} {
+    puts stderr "SSHRD_PASSWORD is not set"
+    exit 64
+}
+
+set timeout 15
+set password_attempts 0
+spawn -noecho {*}$argv
+
+expect {
+    -re {(?i)are you sure you want to continue connecting.*} {
+        send -- "yes\r"
+        exp_continue
+    }
+    -re {(?i)password:} {
+        incr password_attempts
+        if {$password_attempts > 1} {
+            puts stderr "SSHRD authentication was rejected"
+            exit 77
+        }
+        send -- "$env(SSHRD_PASSWORD)\r"
+        exp_continue
+    }
+    timeout {
+        puts stderr "Timed out waiting for SSHRD authentication"
+        exit 124
+    }
+    eof {
+        catch wait result
+        exit [lindex $result 3]
+    }
+}
