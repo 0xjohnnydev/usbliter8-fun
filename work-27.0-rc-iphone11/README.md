@@ -51,27 +51,29 @@ component, including the complete restore ramdisk and kernel, but the device did
 not enumerate as a restored-mode device after `bootx`; no erase or
 `StartRestore` occurred.
 
-The ensuing headless-IDA comparison found that every configured kernel, TXM,
-`restored_external`, and `asr` offset is the exact structural counterpart of
-the reference site. The actual lineage error was that the initial RC port
-followed `work-27.0b3`, while the repository's hardware-tested instructions use
-`work-27.0b2`. The active build now restores beta-2's nonce-preservation branch
-and its two restore-time baseband predicates, mapped to their verified 24A435
-locations.
+The initial headless-IDA comparison correctly mapped most instruction sites but
+missed a semantic control-flow change in AMFI's `postValidation`. Beta 2 rejects
+every hash type except SHA-256 (`CMP W0, #2; B.NE failure`), whereas 24A435 has a
+dedicated SHA-1 rejection block (`CMP W0, #1; B.NE continue`). Copying beta 2's
+`CMP W0, W0` replacement to the RC comparison made the conditional branch fall
+through and forced every validation into the SHA-1 error path. The corrected RC
+patch is at `0x1f0897c` and replaces that conditional branch with an
+unconditional branch to the continuation block.
 
-A clean hardware retry with those corrections uploaded every component but
-again failed to enumerate after `bootx`. The remaining boot-critical packaging
-difference was in the patched restore ramdisk: bare `ldid -S` changed
+A clean hardware retry with the nonce/baseband corrections uploaded every
+component but again failed to enumerate after `bootx`. A later retry also ruled
+out the suspected restore-ramdisk signature metadata as the root cause: bare
+`ldid -S` had changed
 `com.apple.restored_external` to `restored_external` and removed the binary's
-self launch-constraint slot. Since that executable must start before the
-restored USB service exists, the RC build now re-signs with macOS `codesign`
+self launch-constraint slot. The RC build therefore re-signs with macOS `codesign`
 while preserving Apple's identifiers, entitlements, requirements, flags, and
 launch constraints. It also explicitly retains the stock 4096-byte
 CodeDirectory page size and the restore ramdisk's `desc: 0` IM4P metadata. The
 rebuilt ramdisk passes `codesign --verify`, retains all eight special slots on
-`restored_external`, and still contains every checked binary patch. This
-metadata-preserving build needs one clean hardware retry. The phone remains
-unchanged on iOS 26.6.
+`restored_external`, and still contains every checked binary patch, but that
+metadata-preserving image produced the same post-`bootx` failure. The AMFI
+branch error above is the first offset/instruction error that directly explains
+why the ad-hoc-signed restore executables could not launch.
 
 Target IPSW SHA-256:
 
@@ -143,7 +145,7 @@ transfer between the Waveshare handoff and `restore_cfw.sh`.
 | kernel | `0x2fec20c`, `0x2f58ed4`, `0x366924c` | root snapshot/seal checks |
 | kernel | function `0x1f00bb8` | launch constraints |
 | kernel | function `0x39abbfc` | debugger allowance |
-| kernel | `0x1f08978`, `0x1f08ee4`, `0x1f08ef0` | code-signing/dyld policy |
+| kernel | `0x1f0897c`, `0x1f08ee4`, `0x1f08ef0` | code-signing/dyld policy |
 | kernel | function `0x1efbe80` | AMFI trust-cache result |
 | kernel | `0x2fed640` | unencrypted Data-volume check |
 | restored_external | `0x7e848` | FDR restore result |

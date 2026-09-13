@@ -45,7 +45,7 @@ _EXPECTED_HEX = {
         0x1EFBE90: "fd7b02a9",
         0x1F00BB8: "7f2303d5",
         0x1F00BBC: "ff0306d1",
-        0x1F08978: "1f040071",
+        0x1F0897C: "a1000054",
         0x1F08EE4: "c5620094",
         0x1F08EF0: "8bdeff97",
         0x20BFD50: "7f2303d5",

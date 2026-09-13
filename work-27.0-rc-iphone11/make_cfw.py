@@ -210,7 +210,11 @@ patch(0x1f00bb8+4, 0xd65f03c0)
 patch(0x39abbfc, 0xd2800020)
 patch(0x39abbfc+4, 0xd65f03c0)
 # __ZL14postValidationP8LazyPathP7cs_blobjP12OSDictionaryhbjPKcPPcPm
-patch(0x1f08978, 0x6B00001F)
+# Beta 2 rejected every hash type except SHA-256, so its patch neutralized the
+# preceding comparison.  24A435 changed this block to reject SHA-1 only; using
+# the beta-2 CMP replacement here makes the B.NE fall through into the error
+# path.  Branch over the RC-only SHA-1 rejection block instead.
+patch(0x1f0897c, 0x14000005)    # b loc_FFFFFFF008F0C990
 # __ZL27_check_dyld_policy_internalP4procyPy
 patch(0x1f08ee4, 0x52800020)
 patch(0x1f08ef0, 0x52800020)

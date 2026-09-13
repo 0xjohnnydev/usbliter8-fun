@@ -274,7 +274,9 @@ patch(0x1f00bb8+4, 0xd65f03c0)
 patch(0x39abbfc, 0xd2800020)
 patch(0x39abbfc+4, 0xd65f03c0)
 # __ZL14postValidationP8LazyPathP7cs_blobjP12OSDictionaryhbjPKcPPcPm
-patch(0x1f08978, 0x6B00001F)
+# RC rejects SHA-1 in a dedicated block.  Always skip that failure block;
+# porting beta 2's CMP replacement verbatim forces the RC failure path.
+patch(0x1f0897c, 0x14000005)    # b loc_FFFFFFF008F0C990
 # __ZL27_check_dyld_policy_internalP4procyPy
 patch(0x1f08ee4, 0x52800020)
 patch(0x1f08ef0, 0x52800020)
