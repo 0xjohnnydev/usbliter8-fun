@@ -192,6 +192,15 @@ installed ticket against the successful restore identity and nonces, and saves
 recent panic/boot evidence under `diagnostic-logs/sshrd-<timestamp>/`. It does
 not replace the local ticket or modify the phone.
 
+If `usbliter8ctl` fails partway through the raw iBSS upload, do not immediately
+append another upload to that USB session. The upstream client calls request
+`4` `DFU_ABORT`, but request `4` is `DFU_CLRSTATUS`; the standard abort that
+discards a partial `dfuDNLOAD-IDLE` buffer is request `6`. Inspect first with
+`./dfu_download_state.py status`, then use
+`./dfu_download_state.py reset-partial-download` only when its guarded state
+check permits it. Apple's abort may re-enumerate USB; the helper verifies that
+the new session is `dfuIDLE` and retains `PWND:[usbliter8]`.
+
 The restore and tethered-boot launchers deliberately fail before touching USB
 unless their selected Python has PyUSB. Activate the dependency environment
 first, or set `USBLITER8_PYTHON` to that environment's Python executable.
