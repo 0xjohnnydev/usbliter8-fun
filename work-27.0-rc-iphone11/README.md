@@ -74,6 +74,13 @@ image order and personalized sizes match the successful restore log. Before
 touching USB, `boot.py` now verifies both the complete tethered-boot set and the
 successful CFW base against `boot-artifacts.sha256` and fails closed on drift.
 
+The repeated post-`bootx` state lights and clears the framebuffer but never
+enumerates USB, proving that execution has passed from iBoot into XNU. The
+upstream `serial=3` argument makes XNU switch from its video console to the
+hardware serial console, which hides the stopping line without a serial capture
+cable. The normal-boot iBSS/iBEC arguments now keep `-v`, add `keepsyms=1`, and
+omit `serial=3` so the next hardware run exposes kernel progress on screen.
+
 The first restore attempt on an iPhone 11 running iOS 26.6 reached PWN DFU,
 obtained a valid 24A435 erase ticket, and uploaded the complete restore boot
 chain, but the phone did not re-enumerate after `bootx`. A later non-erasing boot

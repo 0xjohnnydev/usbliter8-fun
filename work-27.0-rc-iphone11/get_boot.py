@@ -36,10 +36,12 @@ patch(0x366A8, 0x1400000A)      # b #0x28
 # patch image4_validate_property_callback # find func's epilogue by xref "Unknown ASN1 type %llu\n"
 patch(0x236E8, 0xd503201f)      # nop
 patch(0x236EC, 0xd2800000)      # mov x0, #0
-# patch boot-args with "rd=md0 serial=3 debug=0x2014e -v wdt=-1 %s"
+# Keep diagnostics on the framebuffer.  serial=3 makes XNU switch from the
+# video console to the hardware serial console when one is present, leaving a
+# lit but blank display when no serial capture cable is attached.
 patch(0x2AA0C, 0xF0000522)      # adrp x2, page containing file offset 0xd1158
 patch(0x2AA10, 0x91056042)      # add x2, x2, #0x158
-patch(0xD1158, "-v serial=3 debug=0x2014e launchd_unsecure_cache=1 wdt=-1\x00")  # for normal boot
+patch(0xD1158, "-v debug=0x2014e launchd_unsecure_cache=1 wdt=-1 keepsyms=1\x00")
 fp.close()
 
 # 2. Grab & Patch iBEC
@@ -53,10 +55,10 @@ patch(0x366A8, 0x1400000A)      # b #0x28
 # patch image4_validate_property_callback # find func's epilogue by xref "Unknown ASN1 type %llu\n"
 patch(0x236E8, 0xd503201f)      # nop
 patch(0x236EC, 0xd2800000)      # mov x0, #0
-# patch boot-args with "rd=md0 serial=3 debug=0x2014e -v wdt=-1 %s"
+# Use the same framebuffer-visible diagnostics in iBEC.
 patch(0x2AA0C, 0xF0000522)      # adrp x2, page containing file offset 0xd1158
 patch(0x2AA10, 0x91056042)      # add x2, x2, #0x158
-patch(0xD1158, "-v serial=3 debug=0x2014e launchd_unsecure_cache=1 wdt=-1\x00")  # for normal boot
+patch(0xD1158, "-v debug=0x2014e launchd_unsecure_cache=1 wdt=-1 keepsyms=1\x00")
 fp.close()
 os.system("../tools/img4tool -c iBEC.im4p -t ibec iBEC.raw")
 os.system("../tools/img4 -i iBEC.im4p -o Ramdisk/iBEC.img4 -M t8030_apticket.der")
