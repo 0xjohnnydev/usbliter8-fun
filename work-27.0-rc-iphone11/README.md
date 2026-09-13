@@ -48,8 +48,16 @@ and made the phone leave iBoot, but the kernel never re-enumerated USB. Review
 then found that this RC directory had originally been derived from the repo's
 `work-27.0b3` recipe, while the known-working normal-boot additions live only
 in `work-27.0b2`. The missing beta-2 DeviceTree behavior and seven kernel
-functions are now mapped to 24A435 and guarded by their exact stock bytes; this
-corrected normal-boot set still requires a hardware retry.
+functions are now mapped to 24A435 and guarded by their exact stock bytes.
+
+A hardware retry reached `bootx` but still failed to enumerate. A complete
+beta-2-to-RC function audit then found two malformed upstream CredentialManager
+offsets that the initial RC port had accidentally turned into live patches.
+Beta 2's `0x20f93c9` write crosses the `BTI c` landing pad of
+`performLoggingLevelQueryGated`, while `0x21066b0` is an internal branch in
+`_onEnablePolicy`, not the commented `setPowerStateGated` entry at
+`0x2107a5c`. Both RC functions are now left stock; all other active TXM and
+kernel mappings match their beta-2 instruction and function context.
 
 The first restore attempt on an iPhone 11 running iOS 26.6 reached PWN DFU,
 obtained a valid 24A435 erase ticket, and uploaded the complete restore boot

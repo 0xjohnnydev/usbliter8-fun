@@ -342,8 +342,9 @@ patch(0x20c2b00,   RET_VAL)     # __ZN22AppleCredentialManager19_setPropertiesGa
 patch(0x20c2b00+4, RET)
 patch(0x20c2f8c,   RET_VAL)     # __ZN22AppleCredentialManager28performDoubleClickQueryGatedEPy
 patch(0x20c2f8c+4, RET)
-patch(0x20c307c,   RET_VAL)     # __ZN22AppleCredentialManager29performLoggingLevelQueryGatedEPy
-patch(0x20c307c+4, RET)
+# Do not port beta 2's odd 0x20f93c9 write here.  The real function starts on
+# the preceding byte-aligned BTI landing pad, and replacing it would make an
+# indirect call fail BTI enforcement.  The stock leaf already returns zero.
 patch(0x20c34b8,   RET_VAL)     # lockItem
 patch(0x20c34b8+4, RET)
 patch(0x20c36e8,   RET_VAL)     # unlockItem
@@ -365,8 +366,11 @@ patch(0x20c53d0,   RET_VAL)     # powerOffActionGated
 patch(0x20c53d0+4, RET)
 patch(0x20c5688,   RET_VAL)     # sepManagerMatchedGated
 patch(0x20c5688+4, RET)
-patch(0x20d1b2c,   RET_VAL)     # setPowerStateGated
-patch(0x20d1b2c+4, RET)
+
+# Beta 2 labels 0x21066b0 as setPowerStateGated, but that file offset actually
+# lands on a B.NE inside _onEnablePolicy; the named function is at 0x2107a5c.
+# The hardware-working image therefore did not safely replace the named entry.
+# Keep the RC setPowerStateGated implementation intact as well.
 
 
 fp.close()
