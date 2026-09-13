@@ -59,6 +59,17 @@ Beta 2's `0x20f93c9` write crosses the `BTI c` landing pad of
 `0x2107a5c`. Both RC functions are now left stock; all other active TXM and
 kernel mappings match their beta-2 instruction and function context.
 
+An artifact-lineage audit also compared every payload used by `boot.py` with
+the CFW that completed the hardware restore. Eleven payloads, including SEP,
+SPTM, the restore trust cache, and all unmodified coprocessor firmware, are
+byte-for-byte identical. The only differences are the intended normal-boot
+deltas: boot arguments and nonce preservation in iBSS/iBEC, eight TXM bytes in
+`_allowedBeforeSecureChannelOperational`, one DeviceTree byte for
+`/chosen/ephemeral-storage`, and the mapped normal-boot kernel patches. The
+image order and personalized sizes match the successful restore log. Before
+touching USB, `boot.py` now verifies both the complete tethered-boot set and the
+successful CFW base against `boot-artifacts.sha256` and fails closed on drift.
+
 The first restore attempt on an iPhone 11 running iOS 26.6 reached PWN DFU,
 obtained a valid 24A435 erase ticket, and uploaded the complete restore boot
 chain, but the phone did not re-enumerate after `bootx`. A later non-erasing boot
