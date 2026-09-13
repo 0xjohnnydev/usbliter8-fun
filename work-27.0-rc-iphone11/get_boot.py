@@ -217,9 +217,34 @@ patch(0x1efbe80+4, 0xD2800020)          # MOV             X0, #1
 patch(0x1efbe80+8, 0xB4000043)          # cbz x3, #8
 patch(0x1efbe80+12, 0xF9000060)         # STR             X0, [X3]
 patch(0x1efbe80+16, 0xD65F03C0)         # RET
+
+# ========= Match the hardware-working beta-2 normal-boot kernel =========
+# isDeviceInRestoreMode: keep usbmux/lockdown available before the first
+# unlock/activation.  24A435 adds a BTI instruction immediately before the
+# PACIBSP patched here, so preserve BTI and replace the next two instructions.
+patch(0x28053d0, 0xd2800020)    # mov x0, #1
+patch(0x28053d4, 0xd65f03c0)    # ret
+
+# Sandbox MACF hooks used by the beta-2 /var/jb bootstrap.  These are the
+# 24A435 PACIBSP entries matched by function body and MAC policy operation.
+for _sb in (
+    0x2f219fc,  # file_check_mmap (index 36)
+    0x2f1f998,  # mount_check_mount (index 87)
+    0x2f1f7c8,  # mount_check_remount (index 88)
+    0x2f1f45c,  # mount_check_umount (index 91)
+    0x2f1a480,  # vnode_check_rename (index 120)
+):
+    patch(_sb, 0xd2800000)      # mov x0, #0
+    patch(_sb + 4, 0xd65f03c0)  # ret
+
 # ========= seprmvr64e? =========
 # prevent panic "unencrypted data volume is not allowed ..."
 patch(0x2fed640, 0xd503201f)
+# Permit class opens when the normal-boot DeviceTree disables content
+# protection.  This is the 24A435 match for beta 2's
+# proc_ignores_content_protection.
+patch(0x33ad6a4, 0xd2800020)    # mov x0, #1
+patch(0x33ad6a8, 0xd65f03c0)    # ret
 # panic(cpu 0 caller 0xfffffff0506be614): SEP Panic: : SEPD/SEPD: 0x100010c0e 0x00057800 0x000577e4 0x100001d58 0x100001408 0x100008708 0x100000b24 0x100000ad0 0x1000012a0 [hggghgsgu]
 patch(0x213d340, 0xd2800000) #mov x0,#0 # __ZN15AppleSEPManager13sepPanicCheckEv
 patch(0x213d340+4, 0xD65F03C0) # ret

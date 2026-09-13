@@ -5,10 +5,9 @@ dt_patch.py — apply QEMU-t8030-style DeviceTree patches to an Apple
 flattened DeviceTree (unwrapped IM4P payload), matching xnu.c
 (macho_populate_dtb + REM_PROPS in macho_dtb_node_process).
 
-Patches applied (each mirrors an exact line in xnu.c):
-    del-prop  /defaults/content-protect            REM_PROPS: no encrypted data volume
-    set  u32=1 /defaults/no-effaceable-storage      AppleKeyStore SEP workaround
-    set  u32=1 /product/boot-ios-diagnostics        AppleKeyStore SEP workaround
+Normal-boot patches, matching the hardware-working beta-2 recipe:
+    del-prop  /defaults/content-protect        boot with an unencrypted Data volume
+    set u32=1 /chosen/ephemeral-storage         permit ephemeral-storage boot flow
 
 Semantics mirror the QEMU DTB helpers:
     set-prop  -> set_dtb_prop     : overwrite value if present, else append
@@ -183,8 +182,7 @@ U32_1 = struct.pack("<I", 1)
 #         (op,        node path,      prop name,                value)
 PATCHES = [
     ("del-prop", "/defaults", "content-protect",       None),
-    ("set-prop", "/defaults", "no-effaceable-storage", U32_1),
-    ("set-prop", "/product",  "boot-ios-diagnostics",  U32_1),
+    ("set-prop", "/chosen",   "ephemeral-storage",     U32_1),
 ]
 
 _OPS = {"set-prop": set_prop, "del-prop": del_prop}

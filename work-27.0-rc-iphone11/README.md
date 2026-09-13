@@ -43,6 +43,14 @@ DeviceTree, sealed the System volume, and ended with `Status: Restore Finished`,
 `DONE`, and host exit status 0. This confirms the restore-time offset set and
 the semantic AMFI fix on 24A435.
 
+The first tethered normal-boot attempt after that restore uploaded every image
+and made the phone leave iBoot, but the kernel never re-enumerated USB. Review
+then found that this RC directory had originally been derived from the repo's
+`work-27.0b3` recipe, while the known-working normal-boot additions live only
+in `work-27.0b2`. The missing beta-2 DeviceTree behavior and seven kernel
+functions are now mapped to 24A435 and guarded by their exact stock bytes; this
+corrected normal-boot set still requires a hardware retry.
+
 The first restore attempt on an iPhone 11 running iOS 26.6 reached PWN DFU,
 obtained a valid 24A435 erase ticket, and uploaded the complete restore boot
 chain, but the phone did not re-enumerate after `bootx`. A later non-erasing boot
@@ -160,7 +168,11 @@ transfer between the Waveshare handoff and `restore_cfw.sh`.
 | kernel | function `0x39abbfc` | debugger allowance |
 | kernel | `0x1f0897c`, `0x1f08ee4`, `0x1f08ef0` | code-signing/dyld policy |
 | kernel | function `0x1efbe80` | AMFI trust-cache result |
+| kernel | function `0x28053d0` | report restore mode so usbmux is available before first unlock |
+| kernel | functions `0x2f219fc`, `0x2f1f998`, `0x2f1f7c8`, `0x2f1f45c`, `0x2f1a480` | beta-2 sandbox mmap/mount/rename hooks |
 | kernel | `0x2fed640` | unencrypted Data-volume check |
+| kernel | function `0x33ad6a4` | permit class opens without content protection |
+| DeviceTree | `/chosen/ephemeral-storage = 1` | match the beta-2 normal-boot path |
 | restored_external | `0x7e848` | FDR restore result |
 | restored_external | functions `0x49ddc`, `0x49e54` | report no legacy/current baseband during custom restore |
 | asr | `0x1f670` | conditional image-signature failure branch |

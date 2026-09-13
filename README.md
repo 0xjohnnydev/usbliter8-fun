@@ -7,9 +7,10 @@
 The upstream workflow is currently hardware-tested only on **iPhone 11 Pro**.
 This fork also contains an **experimental, offline-verified iPhone 11 port for
 iOS 27.0 build 24A435** in
-[`work-27.0-rc-iphone11`](work-27.0-rc-iphone11/README.md). It has fail-closed
-offset checks but still needs its first complete restore/boot test on a spare
-device.
+[`work-27.0-rc-iphone11`](work-27.0-rc-iphone11/README.md). Its corrected
+restore path completed a full hardware erase restore, and its tethered normal
+boot now carries the beta-2-only kernel and DeviceTree behavior with
+fail-closed offset checks; that normal-boot correction awaits a hardware retry.
 
 ## Hardware setup
 
