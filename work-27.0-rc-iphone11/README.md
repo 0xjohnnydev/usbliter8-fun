@@ -46,9 +46,10 @@ Two later attempts used an experimental `codesign`-based ramdisk and a modified
 operational sequence (extra USB probes, manual daemon handling, and a resumed
 partial iBSS transfer). Both disconnected during the large ramdisk upload, so
 they were not clean tests of the upstream workflow. That experiment was
-removed. A subsequent upstream-parity run uploaded every component, including
-the complete restore ramdisk and kernel, but the device did not enumerate as a
-restored-mode device after `bootx`; no erase or `StartRestore` occurred.
+removed before further testing. A subsequent upstream-parity run uploaded every
+component, including the complete restore ramdisk and kernel, but the device did
+not enumerate as a restored-mode device after `bootx`; no erase or
+`StartRestore` occurred.
 
 The ensuing headless-IDA comparison found that every configured kernel, TXM,
 `restored_external`, and `asr` offset is the exact structural counterpart of
@@ -56,9 +57,21 @@ the reference site. The actual lineage error was that the initial RC port
 followed `work-27.0b3`, while the repository's hardware-tested instructions use
 `work-27.0b2`. The active build now restores beta-2's nonce-preservation branch
 and its two restore-time baseband predicates, mapped to their verified 24A435
-locations. The CFW has been rebuilt and its postimages, signatures, and IMG4
-containers rechecked offline; this corrected build still needs its first
-hardware run. The phone remains unchanged on iOS 26.6.
+locations.
+
+A clean hardware retry with those corrections uploaded every component but
+again failed to enumerate after `bootx`. The remaining boot-critical packaging
+difference was in the patched restore ramdisk: bare `ldid -S` changed
+`com.apple.restored_external` to `restored_external` and removed the binary's
+self launch-constraint slot. Since that executable must start before the
+restored USB service exists, the RC build now re-signs with macOS `codesign`
+while preserving Apple's identifiers, entitlements, requirements, flags, and
+launch constraints. It also explicitly retains the stock 4096-byte
+CodeDirectory page size and the restore ramdisk's `desc: 0` IM4P metadata. The
+rebuilt ramdisk passes `codesign --verify`, retains all eight special slots on
+`restored_external`, and still contains every checked binary patch. This
+metadata-preserving build needs one clean hardware retry. The phone remains
+unchanged on iOS 26.6.
 
 Target IPSW SHA-256:
 
@@ -135,7 +148,7 @@ transfer between the Waveshare handoff and `restore_cfw.sh`.
 | kernel | `0x2fed640` | unencrypted Data-volume check |
 | restored_external | `0x7e848` | FDR restore result |
 | restored_external | functions `0x49ddc`, `0x49e54` | report no legacy/current baseband during custom restore |
-| asr | `0x1f66c` | image signature result |
+| asr | `0x1f670` | conditional image-signature failure branch |
 
 `get_boot.py` also contains the 24A435 AppleSEPManager and
 AppleCredentialManager normal-boot patch set. All of those locations have

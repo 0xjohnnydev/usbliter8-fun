@@ -11,6 +11,45 @@ from checked_patch import checked_patch
 fp = None
 
 
+def sign_preserving_apple_metadata(path, identifier, require_self_constraint=False):
+    """Ad-hoc re-sign without discarding the restore binary's launch metadata."""
+    subprocess.run(
+        [
+            "/usr/bin/codesign",
+            "--force",
+            "--sign",
+            "-",
+            "--pagesize",
+            "4096",
+            "--preserve-metadata="
+            "identifier,entitlements,requirements,flags,"
+            "launch-constraints,library-constraints",
+            path,
+        ],
+        check=True,
+    )
+    subprocess.run(
+        ["/usr/bin/codesign", "--verify", "--verbose=4", path],
+        check=True,
+    )
+
+    display = subprocess.run(
+        ["/usr/bin/codesign", "--display", "--verbose=5", path],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    metadata = display.stdout + display.stderr
+    if f"Identifier={identifier}" not in metadata:
+        raise RuntimeError(f"codesign did not preserve {identifier} for {path}")
+    if "Page size=4096" not in metadata:
+        raise RuntimeError(f"codesign changed the CodeDirectory page size for {path}")
+    if require_self_constraint and "Has Self Launch Constraints" not in metadata:
+        raise RuntimeError(
+            f"codesign did not preserve the self launch constraint for {path}"
+        )
+
+
 def patch(offset, data):
     file_offset = offset
 
@@ -93,18 +132,23 @@ patch(0x49de0, 0xd65f03c0)      # ret
 # patch(0x543F4  , 0xd2800000)      # mov x0, #0  # XXXXXXXXXXXXXX THIS IS THE PROBLEM STUCK
 # patch(0x543F4+4, 0xd65f03c0)      # ret       # XXXXXXXXXXXXXX THIS IS THE PROBLEM STUCK
 fp.close()
-# Match the upstream signing path exactly.
-os.system("../tools/ldid_macosx_arm64 -S -M -Cadhoc CFW_RD/usr/local/bin/restored_external")
+# On 24A435, restored_external carries a self launch constraint and the
+# com.apple.restored_external identity.  Bare ldid -S drops both; preserve them
+# because this binary must exec before the restored USB service can enumerate.
+sign_preserving_apple_metadata(
+    "CFW_RD/usr/local/bin/restored_external",
+    "com.apple.restored_external",
+    require_self_constraint=True,
+)
 # patch /usr/sbin/asr
 fp = open("CFW_RD/usr/sbin/asr", "r+b")
 # Ignore a failed image digest comparison.  The hardware-tested beta-2 path
 # NOPs the conditional failure branch after memcmp, not the memcmp call.
 patch(0x1f670, 0xd503201f)      # nop: cbnz w0, verification_failure
 fp.close()
-# Match the upstream signing path exactly.
-os.system("../tools/ldid_macosx_arm64 -S -M -Cadhoc CFW_RD/usr/sbin/asr")
+sign_preserving_apple_metadata("CFW_RD/usr/sbin/asr", "com.apple.asr")
 subprocess.run(["hdiutil", "detach", "-force", "CFW_RD"], check=True)
-os.system("pyimg4 im4p create -i ramdisk.dmg -o CFW/043-69915-775.dmg -f rdsk")
+os.system("pyimg4 im4p create -i ramdisk.dmg -o CFW/043-69915-775.dmg -d 0 -f rdsk")
 
 
 # TXM
