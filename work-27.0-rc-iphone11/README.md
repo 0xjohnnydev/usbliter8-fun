@@ -293,3 +293,22 @@ included for the first hardware test.
 The Setup/ScreenTime launchd workaround remains available at
 `../patches/disable_screentime.py`; it is data-driven and has no build-specific
 instruction offsets.
+
+## Pairing and password-protected Wi-Fi
+
+The SEP-less normal boot can bring up usbmux and the physical Wi-Fi interface,
+but the system keychain cannot provide two records needed by those services:
+
+- `lockdownd` gets no `DevicePublicKey` because its
+  `lockdown-identities` / `com.apple.lockdown.pairingkeypair` RSA item is
+  unavailable. Finder reports this as `The value is missing`.
+- `wifid` cannot read or write generic-password records whose service is
+  `AirPort`, so password-protected networks cannot retain their credential.
+
+[`fixes/README.md`](fixes/README.md) documents two exact-build arm64e shims and
+the fail-closed SSHRD installer. The build checks the stock daemon hashes,
+exercises direct storage tests and real dyld interposition tests, injects weak
+load commands, preserves the original daemon signing metadata and entitlements,
+and creates rollback copies before touching the installed system. These fixes
+are intentionally file-backed; the Wi-Fi credential is protected only by Unix
+mode `0600`, not by SEP/keychain encryption.
