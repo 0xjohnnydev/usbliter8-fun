@@ -97,8 +97,9 @@ fp.close()
 os.system("../tools/ldid_macosx_arm64 -S -M -Cadhoc CFW_RD/usr/local/bin/restored_external")
 # patch /usr/sbin/asr
 fp = open("CFW_RD/usr/sbin/asr", "r+b")
-# patch "Image failed signature verification." ...
-patch(0x1f66c, 0xd503201f)      # nop
+# Ignore a failed image digest comparison.  The hardware-tested beta-2 path
+# NOPs the conditional failure branch after memcmp, not the memcmp call.
+patch(0x1f670, 0xd503201f)      # nop: cbnz w0, verification_failure
 fp.close()
 # Match the upstream signing path exactly.
 os.system("../tools/ldid_macosx_arm64 -S -M -Cadhoc CFW_RD/usr/sbin/asr")
