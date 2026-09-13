@@ -133,9 +133,9 @@ python3 tss_proxy_server.py
 ./boot.py
 ```
 
-`restore_cfw.sh` deliberately fails before touching USB unless its selected
-Python has PyUSB. Activate the dependency environment first, or set
-`USBLITER8_PYTHON` to that environment's Python executable.
+The restore and tethered-boot launchers deliberately fail before touching USB
+unless their selected Python has PyUSB. Activate the dependency environment
+first, or set `USBLITER8_PYTHON` to that environment's Python executable.
 
 Do not start `restore_cfw.sh` merely to test the scripts: it invokes an erase
 restore. The safe stopping point for offline preparation is after building and
