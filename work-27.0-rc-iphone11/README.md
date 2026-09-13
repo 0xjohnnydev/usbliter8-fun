@@ -81,6 +81,24 @@ hardware serial console, which hides the stopping line without a serial capture
 cable. The normal-boot iBSS/iBEC arguments now keep `-v`, add `keepsyms=1`, and
 omit `serial=3` so the next hardware run exposes kernel progress on screen.
 
+A verified SSHRD boot after the successful restore recovered the exact
+RootTicket installed in Preboot. Its SHA-256 is
+`2ad50fb15355b97f167ed5f0f42857e73bad835b31625580f36572ee56f26f43`;
+its ECID, board/chip IDs, build identity, AP nonce, SEP nonce, and TSS authority
+signature all match the completed restore. A newly requested ticket carrying
+the same AP and SEP nonces has SHA-256
+`6825b398e8bacd2b82d615aaee6b2c0632f44eed296e222f3e6ccbfdff8da6bd`
+and a different TSS server nonce, so it is not an exact substitute for the
+installed ticket. Data was mounted read-only during the same collection and
+contained no recent matching panic or crash report.
+
+The normal chain has now been rebuilt with the exact installed RootTicket and
+locked in `boot-artifacts.sha256`. Extracting the inner IM4P from every signed
+image confirms that all 17 boot payloads are byte-for-byte identical to the
+previous normal bundle; only their server-issued personalization changed. This
+leaves the installed-ticket handoff as the one intentional variable in the
+next hardware boot, which has not yet been run.
+
 The first restore attempt on an iPhone 11 running iOS 26.6 reached PWN DFU,
 obtained a valid 24A435 erase ticket, and uploaded the complete restore boot
 chain, but the phone did not re-enumerate after `bootx`. A later non-erasing boot

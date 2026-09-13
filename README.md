@@ -10,10 +10,10 @@ iOS 27.0 build 24A435** in
 [`work-27.0-rc-iphone11`](work-27.0-rc-iphone11/README.md). Its corrected
 restore path completed a full hardware erase restore, and its tethered normal
 boot now carries the beta-2-only kernel and DeviceTree behavior with
-fail-closed offset checks. A post-`bootx` retry exposed two malformed upstream
-CredentialManager offsets that the initial RC port had turned into live
-patches; the rebuilt chain now leaves those functions stock and awaits a
-hardware retry.
+fail-closed offset checks. Post-restore SSHRD diagnostics recovered and
+validated the exact RootTicket installed in Preboot. The normal chain has been
+rebuilt with that ticket, and all 17 inner boot payloads match the previously
+audited bundle byte-for-byte; the first exact-ticket hardware boot is pending.
 
 ## Hardware setup
 

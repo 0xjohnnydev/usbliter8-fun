@@ -174,7 +174,6 @@ print "Trying to mount Data read-only for recent failure evidence ..."
 if ssh_remote '/bin/mkdir -p /mnt2; /sbin/mount | /usr/bin/grep -q " on /mnt2 " || /sbin/mount_apfs -o rdonly /dev/disk1s2 /mnt2' \
     >"$OUTPUT_DIR/data-mount.txt" 2>&1; then
     ssh_remote '
-        : > /tmp/usbliter8-diagnostic-paths.txt
         for directory in \
             /mnt2/mobile/Library/Logs/CrashReporter \
             /mnt2/logs/CrashReporter \
@@ -191,20 +190,15 @@ if ssh_remote '/bin/mkdir -p /mnt2; /sbin/mount | /usr/bin/grep -q " on /mnt2 " 
                     -o -name "*resetcounter*" \
                     -o -name "*kernel*" \) -print
             fi
-        done | /usr/bin/head -n 100 > /tmp/usbliter8-diagnostic-paths.txt
-        /bin/cat /tmp/usbliter8-diagnostic-paths.txt
+        done | /usr/bin/head -n 100
     ' >"$OUTPUT_DIR/crash-paths.txt"
 
     if [[ -s "$OUTPUT_DIR/crash-paths.txt" ]]; then
-        ssh_remote '/usr/bin/tar -cf /tmp/usbliter8-diagnostics.tar -T /tmp/usbliter8-diagnostic-paths.txt' \
-            >"$OUTPUT_DIR/device-tar.txt" 2>&1
-        /usr/bin/scp -O -q \
-            -o "ControlPath=$CONTROL_SOCKET" \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=/dev/null \
-            -P "$LOCAL_PORT" \
-            root@127.0.0.1:/tmp/usbliter8-diagnostics.tar \
-            "$OUTPUT_DIR/recent-diagnostics.tar"
+        /usr/bin/ssh "${SSH_OPTIONS[@]}" root@127.0.0.1 \
+            '/usr/bin/tar -cf - -T -' \
+            <"$OUTPUT_DIR/crash-paths.txt" \
+            >"$OUTPUT_DIR/recent-diagnostics.tar" \
+            2>"$OUTPUT_DIR/device-tar.txt"
         /usr/bin/tar -xf "$OUTPUT_DIR/recent-diagnostics.tar" \
             -C "$OUTPUT_DIR/crash-files"
     fi
