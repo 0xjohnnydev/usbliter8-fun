@@ -367,10 +367,12 @@ patch(0x20c53d0+4, RET)
 patch(0x20c5688,   RET_VAL)     # sepManagerMatchedGated
 patch(0x20c5688+4, RET)
 
-# Beta 2 labels 0x21066b0 as setPowerStateGated, but that file offset actually
-# lands on a B.NE inside _onEnablePolicy; the named function is at 0x2107a5c.
-# The hardware-working image therefore did not safely replace the named entry.
-# Keep the RC setPowerStateGated implementation intact as well.
+# Beta 2 labels 0x21066b0 as setPowerStateGated, but the live write actually
+# replaces a B.NE and the following MOV inside _onEnablePolicy.  Reproduce the
+# hardware-working binary's behavior at the exact homologous RC basic block;
+# keep the separately located setPowerStateGated entry intact.
+patch(0x20d0724, RET_VAL)       # _onEnablePolicy: B.NE -> mov w0, #0
+patch(0x20d0724+4, RET)         # following mov x0, x19 -> ret
 
 
 fp.close()
