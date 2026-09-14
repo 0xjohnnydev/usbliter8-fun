@@ -39,7 +39,14 @@ work-27.0b2/vnc/tvncd
 # trollvncserver: binary GPL của bên thứ 3 — KHÔNG commit, fetch theo vnc/GET_TROLLVNC.md
 work-27.0b2/vnc/trollvncserver
 
+# ===== Per-device bootstrap cache and SSH client identity =====
+work-27.0-rc-iphone11/bootstrap/cache/
+work-27.0-rc-iphone11/bootstrap/.device-ssh/
+work-27.0-rc-iphone11/analysis/
+work-27.0-rc-iphone11/registration_refresh_native.plist
+
 # ===== macOS / Python =====
 .DS_Store
+.venv/
 __pycache__/
 *.pyc

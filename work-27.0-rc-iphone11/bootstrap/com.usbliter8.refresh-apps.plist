@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.usbliter8.refresh-apps</string>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/libexec/usbliter8-refresh-apps</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>/private/var/tmp/usbliter8-refresh-apps-launchd.log</string>
+	<key>StandardOutPath</key>
+	<string>/private/var/tmp/usbliter8-refresh-apps-launchd.log</string>
+	<key>ThrottleInterval</key>
+	<integer>30</integer>
+	<key>UserName</key>
+	<string>root</string>
+</dict>
+</plist>

@@ -34,18 +34,35 @@ STATE_NAMES = {
 }
 
 
-def open_pwned_device():
-    device = usb.core.find(idVendor=0x05AC, idProduct=0x1227)
-    if device is None:
-        raise RuntimeError("no Apple DFU device is connected")
-
-    serial = device.serial_number or ""
-    if "PWND:[usbliter8]" not in serial:
-        raise RuntimeError("the connected DFU device is not PWND by usbliter8")
-    return device
+def read_serial(device):
+    try:
+        return device.serial_number or ""
+    except (usb.core.USBError, ValueError):
+        # macOS can expose the newly enumerated device before its language/string
+        # descriptors are readable.  Treat that as transient, not as lost PWND.
+        return None
 
 
-def reopen_pwned_device(previous_device, timeout_seconds=8.0):
+def open_pwned_device(timeout_seconds=8.0):
+    deadline = time.monotonic() + timeout_seconds
+    saw_dfu = False
+    while time.monotonic() < deadline:
+        devices = usb.core.find(
+            find_all=True, idVendor=0x05AC, idProduct=0x1227
+        )
+        for device in devices or ():
+            saw_dfu = True
+            serial = read_serial(device)
+            if serial is not None and "PWND:[usbliter8]" in serial:
+                return device
+        time.sleep(0.1)
+
+    if saw_dfu:
+        raise RuntimeError("Apple DFU is present but its PWND marker is unreadable")
+    raise RuntimeError("no Apple DFU device is connected")
+
+
+def reopen_pwned_device(previous_device, timeout_seconds=12.0):
     # Apple's DFU_ABORT implementation may reset the USB connection even though
     # the SoC stays in DFU and the in-memory usbliter8 patch remains installed.
     try:
@@ -56,12 +73,15 @@ def reopen_pwned_device(previous_device, timeout_seconds=8.0):
     deadline = time.monotonic() + timeout_seconds
     last_error = None
     while time.monotonic() < deadline:
-        device = usb.core.find(idVendor=0x05AC, idProduct=0x1227)
-        if device is not None:
+        devices = usb.core.find(
+            find_all=True, idVendor=0x05AC, idProduct=0x1227
+        )
+        for device in devices or ():
             try:
-                if "PWND:[usbliter8]" in (device.serial_number or ""):
+                serial = device.serial_number or ""
+                if "PWND:[usbliter8]" in serial:
                     return device
-            except usb.core.USBError as error:
+            except (usb.core.USBError, ValueError) as error:
                 last_error = error
         time.sleep(0.1)
 
@@ -137,7 +157,11 @@ def reset_partial_download(device):
         raise RuntimeError(
             f"DFU state did not return to dfuIDLE: {describe_state(final_state)}"
         )
-    if "PWND:[usbliter8]" not in (device.serial_number or ""):
+    serial = read_serial(device)
+    if serial is None:
+        device = reopen_pwned_device(device)
+        serial = read_serial(device)
+    if serial is None or "PWND:[usbliter8]" not in serial:
         raise RuntimeError("DFU became idle but the usbliter8 PWND marker disappeared")
     print("DFU download state is clean and PWND is preserved")
 

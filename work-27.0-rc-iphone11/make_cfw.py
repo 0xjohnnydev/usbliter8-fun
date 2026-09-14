@@ -162,6 +162,10 @@ fp = open("TXM.raw", "r+b")
 patch(0x3e244, 0xd2800000)      # memcmp in _queryModule2
 patch(0x3df48, 0xd2800000)      # memcmp in _queryModule0
 patch(0x3e0b0, 0xd2800000)      # memcmp in _queryModule1
+# Real Developer Mode cannot be enabled in this SEP-less boot because lockdown
+# cannot complete pairing. Follow TXM's existing Developer Mode-enabled branch
+# after its callback, leaving the rest of the sensitive-entitlement gate intact.
+patch(0x43710, 0x17fffff6)          # B 0x476e8 (component 0xA2 success)
 # TXM [Error]: CodeSignature: selector: 24 | 0xA1 | 0x30 | 1
 patch(0x437b0, 0xd503201f)          # instr in _validateConstraintsSignatureType
 patch(0x437b8, 0xd503201f)          # instr in _validateConstraintsSignatureType
@@ -215,6 +219,10 @@ patch(0x39abbfc+4, 0xd65f03c0)
 # the beta-2 CMP replacement here makes the B.NE fall through into the error
 # path.  Branch over the RC-only SHA-1 rejection block instead.
 patch(0x1f0897c, 0x14000005)    # b loc_FFFFFFF008F0C990
+# Match Developer Mode's taken path for AMFI's developer-only entitlement
+# filter.  This keeps the upstream Sileo entitlement set launchable even when
+# the SEP-less device cannot persistently enable Developer Mode in Settings.
+patch(0x1f08ad8, 0x1400000b)    # b loc_FFFFFFF008F0CB04
 # __ZL27_check_dyld_policy_internalP4procyPy
 patch(0x1f08ee4, 0x52800020)
 patch(0x1f08ef0, 0x52800020)

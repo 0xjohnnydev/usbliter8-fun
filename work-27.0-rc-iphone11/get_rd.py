@@ -256,9 +256,15 @@ if not os.path.exists("CFW/kernelcache.release.iphone12b.bak"):
 os.system("pyimg4 im4p extract -i CFW/kernelcache.release.iphone12b.bak -o kcache.raw")
 # patch
 fp = open("kcache.raw", "r+b")
-# Rename kernel name
-patch(0x3f2be, "/PATCHED_ARM64_T8030")
-patch(0x3f324, "/PATCHED_ARM64_T8030")
+# ========= seprmvr64e? =========
+# Exact 24A435 ports of the three SEP-disabling patches at the start of
+# 34306's SSHRD kernel recipe.
+patch(0x20bdf68, 0xD2800000)    # ACMKernelUtils::isSEPAvailable; mov x0, #0
+patch(0x2146d38, 0xD2800000)    # AppleSEPPanicBuffer::isPanicked; mov x0, #0
+patch(0x2146d3c, 0xd65f03c0)    # AppleSEPPanicBuffer::isPanicked; ret
+patch(0x2138914, 0xD2800000)    # AppleSEPManager::start; mov x0, #0
+patch(0x2138918, 0xd65f03c0)    # AppleSEPManager::start; ret
+
 # ========= Bypass SSV =========
 # _apfs_vfsop_mount: Prevent panic "Failed to find the root snapshot. Rooting from the live fs ..."
 patch(0x2fec20c, 0xd503201f)
@@ -285,7 +291,7 @@ patch(0x1efbe80+4, 0xD2800020)          # MOV             X0, #1
 patch(0x1efbe80+8, 0xB4000043)          # cbz x3, #8
 patch(0x1efbe80+12, 0xF9000060)         # STR             X0, [X3]
 patch(0x1efbe80+16, 0xD65F03C0)         # RET
-# ========= seprmvr64e? =========
+
 # prevent panic "unencrypted data volume is not allowed ..."
 patch(0x2fed640, 0xd503201f)
 

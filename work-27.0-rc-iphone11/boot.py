@@ -1,8 +1,9 @@
 #!/bin/zsh
-set -e
 
 SCRIPT_DIR=${0:A:h}
 cd "$SCRIPT_DIR"
+PATH="${SCRIPT_DIR:h}/.venv/bin:$PATH"
+export PATH
 
 if ! artifact_check=$(shasum -a 256 -c boot-artifacts.sha256 2>&1); then
     print -u2 -- "$artifact_check"
@@ -11,13 +12,12 @@ if ! artifact_check=$(shasum -a 256 -c boot-artifacts.sha256 2>&1); then
 fi
 print "Verified boot artifacts against the successful 24A435 restore lineage"
 
-PYUSB_PYTHON=${USBLITER8_PYTHON:-python3}
-if ! "$PYUSB_PYTHON" -c 'import usb' >/dev/null 2>&1; then
-    print -u2 "Python '$PYUSB_PYTHON' does not have PyUSB; refusing to touch the device"
+if ! ../tools/usbliter8ctl --help >/dev/null 2>&1; then
+    print -u2 "The canonical usbliter8ctl entrypoint is not runnable; refusing to touch the device"
     exit 1
 fi
 
-"$PYUSB_PYTHON" ../tools/usbliter8ctl boot ./Ramdisk/iBSS.raw;
+../tools/usbliter8ctl boot ./Ramdisk/iBSS.raw;
 sleep 3;
 irecovery -f Ramdisk/iBEC.img4;
 irecovery -c go;

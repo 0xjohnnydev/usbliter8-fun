@@ -148,6 +148,15 @@ test -f /mnt1/usr/sbin/wifid
 '
 
 if [[ "$MODE" == "rollback" ]]; then
+    print "Mounting the Data volume read-write for generated-file cleanup"
+    ssh_device '
+set -e
+/bin/mkdir -p /mnt2
+if ! /sbin/mount | /usr/bin/grep -q " on /mnt2 "; then
+    /sbin/mount_apfs /dev/disk1s2 /mnt2
+fi
+/sbin/mount -u -o rw /dev/disk1s2
+'
     print "Reading and verifying both backups before rollback"
     ssh_device '
 set -e
@@ -181,7 +190,22 @@ set -e
         "$LOCKDOWN_STOCK_SHA" ]]
     [[ "$(shasum -a 256 "$TEMP_DIR/wifid.rollback" | awk '{print $1}')" == \
         "$WIFID_STOCK_SHA" ]]
-    print "Rollback verified. The unused dylibs may remain safely on System."
+
+    print "Removing the now-inactive dylibs and generated backing files"
+    ssh_device '
+set -e
+/bin/rm -f \
+    /mnt1/usr/lib/usbliter8-pairing.dylib \
+    /mnt1/usr/lib/usbliter8-wifi.dylib \
+    /mnt2/root/Library/Lockdown/usbliter8_pairing_key.der \
+    /mnt2/preferences/SystemConfiguration/com.usbliter8.wifi-passwords.plist
+/bin/sync
+test ! -e /mnt1/usr/lib/usbliter8-pairing.dylib
+test ! -e /mnt1/usr/lib/usbliter8-wifi.dylib
+test ! -e /mnt2/root/Library/Lockdown/usbliter8_pairing_key.der
+test ! -e /mnt2/preferences/SystemConfiguration/com.usbliter8.wifi-passwords.plist
+'
+    print "Full rollback verified: both stock daemons restored and both shims removed."
     exit 0
 fi
 

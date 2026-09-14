@@ -12,6 +12,8 @@ NOP = 0xD503201F
 MOV_X0_0 = 0xD2800000
 MOV_W0_1 = 0x52800020
 RET = 0xD65F03C0
+ADRP_X0_ACTIVATED = 0xD0000620
+ADD_X0_ACTIVATED = 0x911BE000
 
 # component -> (file offset, expected instruction, replacement, purpose)
 PATCHES = {
@@ -24,6 +26,34 @@ PATCHES = {
     ],
     "mobileactivationd": [
         (0x2EC368, 0x39405000, MOV_W0_1, "-[DeviceType should_hactivate] -> YES"),
+        # Port of 34306's secondary activation-state bypass.  In 24A435 the
+        # method moved from 0x327bxx to 0x329bxx, while its control flow stayed
+        # identical: ignore an incomplete DataArk migration, then use the
+        # local CFString object for "Activated" instead of "Unactivated".
+        (
+            0x329BE8,
+            0x36000576,
+            NOP,
+            "getActivationStateWithCompletionBlock: ignore migration-unavailable branch",
+        ),
+        (
+            0x329C48,
+            0x90000528,
+            ADRP_X0_ACTIVATED,
+            "load page of local CFString Activated",
+        ),
+        (
+            0x329C4C,
+            0x910C4108,
+            ADD_X0_ACTIVATED,
+            "form address of local CFString Activated",
+        ),
+        (
+            0x329C50,
+            0xF9400100,
+            NOP,
+            "keep direct CFString Activated address instead of dereferencing a global",
+        ),
     ],
 }
 

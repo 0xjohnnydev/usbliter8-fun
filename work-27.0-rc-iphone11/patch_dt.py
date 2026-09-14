@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-dt_patch.py — apply QEMU-t8030-style DeviceTree patches to an Apple
-flattened DeviceTree (unwrapped IM4P payload), matching xnu.c
-(macho_populate_dtb + REM_PROPS in macho_dtb_node_process).
+dt_patch.py — apply the 34306 SSHRD DeviceTree patches to an Apple flattened
+DeviceTree (unwrapped IM4P payload).
 
-Patches applied (each mirrors an exact line in xnu.c):
-    del-prop  /defaults/content-protect            REM_PROPS: no encrypted data volume
-    set  u32=1 /defaults/no-effaceable-storage      AppleKeyStore SEP workaround
-    set  u32=1 /product/boot-ios-diagnostics        AppleKeyStore SEP workaround
+Patches applied (byte-for-byte equivalent to work-27.0b2/dt_patch.py):
+    set u32=0 /chosen/sepfw-load-at-boot
+    set u32=0 /chosen/protected-data-access
 
 Semantics mirror the QEMU DTB helpers:
     set-prop  -> set_dtb_prop     : overwrite value if present, else append
@@ -178,13 +176,12 @@ def del_prop(dt, node_path, name):
 
 # ---- patch table (each row == one line in xnu.c) ---------------------------
 
-U32_1 = struct.pack("<I", 1)
+U32_0 = struct.pack("<I", 0)
 
 #         (op,        node path,      prop name,                value)
 PATCHES = [
-    ("del-prop", "/defaults", "content-protect",       None),
-    # ("set-prop", "/defaults", "no-effaceable-storage", U32_1),
-    # ("set-prop", "/product",  "boot-ios-diagnostics",  U32_1),
+    ("set-prop", "/chosen", "sepfw-load-at-boot",    U32_0),
+    ("set-prop", "/chosen", "protected-data-access", U32_0),
 ]
 
 _OPS = {"set-prop": set_prop, "del-prop": del_prop}

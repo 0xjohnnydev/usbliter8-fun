@@ -68,7 +68,8 @@ the CFW that completed the hardware restore. Eleven payloads, including SEP,
 SPTM, the restore trust cache, and all unmodified coprocessor firmware, are
 byte-for-byte identical. The only differences are the intended normal-boot
 deltas: boot arguments and nonce preservation in iBSS/iBEC, eight TXM bytes in
-`_allowedBeforeSecureChannelOperational`, one DeviceTree byte for
+`_allowedBeforeSecureChannelOperational`, one TXM Developer Mode branch, one
+DeviceTree byte for
 `/chosen/ephemeral-storage`, and the mapped normal-boot kernel patches. The
 image order and personalized sizes match the successful restore log. Before
 touching USB, `boot.py` now verifies both the complete tethered-boot set and the
@@ -244,6 +245,7 @@ transfer between the Waveshare handoff and `restore_cfw.sh`.
 | iBSS + iBEC | `0x2aa0c`, `0x2aa10`, string at `0xd1158` | boot-args pointer and string |
 | iBSS + iBEC | `0x366a8` | preserve the recovery nonce (iBEC for restore; both stages for later boots) |
 | TXM | `0x3df48`, `0x3e0b0`, `0x3e244` | module-query signature comparisons |
+| TXM | `0x43710` in function `0x436b8` | follow the existing Developer Mode-enabled branch for sensitive entitlements |
 | TXM | `0x437b0`, `0x437b8` | constraints signature validation |
 | TXM | function `0x2fd04` | normal-boot pre-secure-channel allowance |
 | kernel | `0x2fec20c`, `0x2f58ed4`, `0x366924c` | root snapshot/seal checks |
@@ -266,13 +268,15 @@ preimage guards in `checked_patch.py`.
 
 ## Userland patches
 
-The three offsets checked for 24A435 are:
+The eight offsets checked for 24A435 are:
 
 | Binary | Offset | Change |
 | --- | ---: | --- |
 | `coreauthd` | `0x95c0` | NOP `objc_msgSend$startController` call |
 | `ctkd` | `0x1b38`, `0x1b3c` | return `nil` from `serverAttributesOfKey:error:` |
 | `mobileactivationd` | `0x2ec368` | make `should_hactivate` return true |
+| `mobileactivationd` | `0x329be8` | ignore the migration-unavailable branch in `getActivationStateWithCompletionBlock:` |
+| `mobileactivationd` | `0x329c48`, `0x329c4c`, `0x329c50` | return the local `Activated` CFString instead of `Unactivated` |
 
 Check a binary without changing it:
 
@@ -285,16 +289,52 @@ creates a sibling `.orig` backup, writes the patch, and verifies the result.
 Re-sign the patched binary while preserving the entitlements extracted from the
 `.orig` file.
 
-The older beta-2 script also replaced a secondary
-`getActivationStateWithCompletionBlock` path. That path has deliberately not
-been guessed here; only the directly verified 24A435 `should_hactivate` method is
-included for the first hardware test.
+The beta-2 script's secondary `getActivationStateWithCompletionBlock:` patch is
+now mapped to 24A435.  IDA confirms the method retained the same instruction
+layout with a `+0x1f38` code shift, while the local `Activated` CFString moved to
+`0x1003ef6f8`; the two replacement address-forming instructions are therefore
+build-specific rather than copied from beta 2.
 
 The Setup/ScreenTime launchd workaround remains available at
 `../patches/disable_screentime.py`; it is data-driven and has no build-specific
 instruction offsets.
 
-## Pairing and password-protected Wi-Fi
+Build the entitlement-preserving daemon payload from an extracted 24A435 root,
+then install it and the launchd overrides from the corrected SSH ramdisk:
+
+```sh
+./bootstrap/build_setup_bypass_payload.sh /path/to/extracted/24A435/root
+./bootstrap/install_setup_bypass_via_sshrd.sh
+```
+
+Both scripts guard the exact stock and patched SHA-256 values.  The installer
+backs up each on-device stock daemon, stages and reads back every replacement,
+and refuses an unknown device file before making any change.
+
+## Normal-mode root SSH
+
+Do not install a custom launchd job or modify
+`/System/Library/xpc/launchd.plist`.  The 34306 source archive puts Dropbear in
+the SSH ramdisk only; it does not contain a normal-iOS Dropbear job or launcher.
+The attempted local launchd-cache experiment did not open port 22 and is not
+part of this port.  Normal-mode SSH therefore remains unresolved until an
+upstream-equivalent implementation is identified.
+
+## Verified Sileo launch
+
+Sileo 2.5.1 now launches successfully on the iPhone 11 / 24A435 normal boot.
+The final launch required both Developer Mode gates above and preservation of
+the Procursus archive's ownership for `/var/jb/var/mobile`: it must be UID/GID
+`501:501`, not root. Sileo creates
+`/var/jb/var/mobile/Library/Caches/Sileo/Database` on first launch; flattening
+the bootstrap tree to root makes that creation fail and terminates Sileo with
+`Database Connection failed`.
+
+Both `bootstrap/install_from_sshrd.sh` and
+`bootstrap/install_launchable_sileo_via_sshrd.sh` now enforce and verify the
+upstream ownership before normal boot.
+
+## Experimental pairing and password-protected Wi-Fi (not installed)
 
 The SEP-less normal boot can bring up usbmux and the physical Wi-Fi interface,
 but the system keychain cannot provide two records needed by those services:
@@ -309,6 +349,7 @@ but the system keychain cannot provide two records needed by those services:
 the fail-closed SSHRD installer. The build checks the stock daemon hashes,
 exercises direct storage tests and real dyld interposition tests, injects weak
 load commands, preserves the original daemon signing metadata and entitlements,
-and creates rollback copies before touching the installed system. These fixes
-are intentionally file-backed; the Wi-Fi credential is protected only by Unix
-mode `0600`, not by SEP/keychain encryption.
+and creates rollback copies before touching the installed system. They were
+rolled back and are not part of the verified Sileo-capable device state. These
+fixes are intentionally file-backed; the Wi-Fi credential is protected only by
+Unix mode `0600`, not by SEP/keychain encryption.

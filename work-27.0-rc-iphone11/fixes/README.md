@@ -1,5 +1,9 @@
 # 24A435 pairing and encrypted Wi-Fi shims
 
+> Experimental and not installed in the verified Sileo-capable configuration.
+> The on-device trial was rolled back after causing pairing/lock-state
+> regressions; keep this work opt-in until the daemon interaction is understood.
+
 These two narrowly scoped arm64e dylibs work around system-keychain operations
 that are unavailable in the SEP-less iPhone 11 boot:
 

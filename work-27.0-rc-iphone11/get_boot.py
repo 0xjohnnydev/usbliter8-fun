@@ -41,7 +41,7 @@ patch(0x236EC, 0xd2800000)      # mov x0, #0
 # lit but blank display when no serial capture cable is attached.
 patch(0x2AA0C, 0xF0000522)      # adrp x2, page containing file offset 0xd1158
 patch(0x2AA10, 0x91056042)      # add x2, x2, #0x158
-patch(0xD1158, "-v debug=0x2014e launchd_unsecure_cache=1 wdt=-1 keepsyms=1\x00")
+patch(0xD1158, "-v serial=3 debug=0x2014e launchd_unsecure_cache=1 wdt=-1\x00")
 fp.close()
 
 # 2. Grab & Patch iBEC
@@ -58,7 +58,7 @@ patch(0x236EC, 0xd2800000)      # mov x0, #0
 # Use the same framebuffer-visible diagnostics in iBEC.
 patch(0x2AA0C, 0xF0000522)      # adrp x2, page containing file offset 0xd1158
 patch(0x2AA10, 0x91056042)      # add x2, x2, #0x158
-patch(0xD1158, "-v debug=0x2014e launchd_unsecure_cache=1 wdt=-1 keepsyms=1\x00")
+patch(0xD1158, "-v serial=3 debug=0x2014e launchd_unsecure_cache=1 wdt=-1\x00")
 fp.close()
 os.system("../tools/img4tool -c iBEC.im4p -t ibec iBEC.raw")
 os.system("../tools/img4 -i iBEC.im4p -o Ramdisk/iBEC.img4 -M t8030_apticket.der")
@@ -110,6 +110,10 @@ fp = open("TXM.raw", "r+b")
 patch(0x3e244, 0xd2800000)      # memcmp in _queryModule2
 patch(0x3df48, 0xd2800000)      # memcmp in _queryModule0
 patch(0x3e0b0, 0xd2800000)      # memcmp in _queryModule1
+# Real Developer Mode cannot be enabled in this SEP-less boot because lockdown
+# cannot complete pairing. Follow TXM's existing Developer Mode-enabled branch
+# after its callback, leaving the rest of the sensitive-entitlement gate intact.
+patch(0x43710, 0x17fffff6)          # B 0x476e8 (component 0xA2 success)
 # TXM [Error]: CodeSignature: selector: 24 | 0xA1 | 0x30 | 1
 patch(0x437b0, 0xd503201f)          # instr in _validateConstraintsSignatureType
 patch(0x437b8, 0xd503201f)          # instr in _validateConstraintsSignatureType
@@ -210,6 +214,12 @@ patch(0x39abbfc+4, 0xd65f03c0)
 # RC rejects SHA-1 in a dedicated block.  Always skip that failure block;
 # porting beta 2's CMP replacement verbatim forces the RC failure path.
 patch(0x1f0897c, 0x14000005)    # b loc_FFFFFFF008F0C990
+# Sileo retains the upstream com.apple.system-task-ports.control entitlement.
+# On 24A435, AMFI rejects that entitlement before spawn whenever the persisted
+# Developer Mode state is off.  The SEP-less boot cannot reveal/enable the
+# setting because lockdownd cannot obtain its pairing key.  Skip only this
+# rejection edge, exactly as the taken Developer Mode branch does.
+patch(0x1f08ad8, 0x1400000b)    # b loc_FFFFFFF008F0CB04
 # __ZL27_check_dyld_policy_internalP4procyPy
 patch(0x1f08ee4, 0x52800020)
 patch(0x1f08ef0, 0x52800020)
@@ -344,9 +354,11 @@ patch(0x20c2b00,   RET_VAL)     # __ZN22AppleCredentialManager19_setPropertiesGa
 patch(0x20c2b00+4, RET)
 patch(0x20c2f8c,   RET_VAL)     # __ZN22AppleCredentialManager28performDoubleClickQueryGatedEPy
 patch(0x20c2f8c+4, RET)
-# Do not port beta 2's odd 0x20f93c9 write here.  The real function starts on
-# the preceding byte-aligned BTI landing pad, and replacing it would make an
-# indirect call fail BTI enforcement.  The stock leaf already returns zero.
+# 34306 writes RET_VAL at 0x20f93c9 (one byte into the BTI instruction), an
+# obvious typo for performLoggingLevelQueryGated.  Port its intended return-0
+# behavior while retaining the RC function's BTI landing pad.
+patch(0x20c3080,   RET_VAL)     # after BTI: mov w0, #0
+patch(0x20c3080+4, RET)
 patch(0x20c34b8,   RET_VAL)     # lockItem
 patch(0x20c34b8+4, RET)
 patch(0x20c36e8,   RET_VAL)     # unlockItem
