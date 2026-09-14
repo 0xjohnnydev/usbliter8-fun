@@ -6,9 +6,11 @@
 > passcode, Wi-Fi, baseband, Bluetooth, and Apple services partly or completely
 > unavailable. Use only a spare **standard iPhone 11**.
 
-This fork's hardware-verified target is the **standard 6.1-inch iPhone 11**
-(`iPhone12,1`, `n104ap`, A13), not the Pro or Pro Max. The iOS 27.0 build
-24A435 port is in
+This is **0xjohnny's standard-iPhone-11 port** of Huy's original
+[`34306/usbliter8-fun`](https://github.com/34306/usbliter8-fun) work. Huy's
+repository is the upstream source of truth; this fork maps and validates that
+workflow for the **standard 6.1-inch iPhone 11** (`iPhone12,1`, `n104ap`, A13),
+not the Pro or Pro Max. The iOS 27.0 build 24A435 port is in
 [`work-27.0-rc-iphone11`](work-27.0-rc-iphone11/README.md). Its corrected
 restore path completed a full hardware erase restore, and its tethered normal
 boot now carries the beta-2-only kernel and DeviceTree behavior with
@@ -161,8 +163,11 @@ Enjoy!
 
 ## Credits
 
-I need to acknowledge and credit some awesome projects that I based this work on.
+This port by **0xjohnny** builds on the following work:
 
+- [**Huy (34306)**](https://github.com/34306) for
+  [`34306/usbliter8-fun`](https://github.com/34306/usbliter8-fun), the upstream
+  implementation and source of truth that this iPhone 11 / 24A435 port follows
 - [**usbliter8-fun**](https://github.com/wh1te4ever/usbliter8-fun) by [**wh1te4ever**](https://github.com/wh1te4ever) for CFW and Ramdisk patched for iOS 27.0 beta 2 (24A5370h)
 - [**khanhduytran0**](https://github.com/khanhduytran0) for idea on DeviceTree and USB Restriction in kernel
 - **img4/img4tool** by [**tihmstar**](https://github.com/tihmstar) for sign IMG4 with APTicket

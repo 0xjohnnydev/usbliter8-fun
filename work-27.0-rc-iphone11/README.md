@@ -4,6 +4,12 @@ This directory is the hardware-verified `usbliter8-fun` port for the **standard
 6.1-inch iPhone 11** (`iPhone12,1`, `n104ap`, `t8030`) on **iOS 27.0 build
 24A435**. It does not target the iPhone 11 Pro or Pro Max.
 
+This is **0xjohnny's** device/build port of Huy's
+[`34306/usbliter8-fun`](https://github.com/34306/usbliter8-fun). Huy's repository
+remains the upstream source of truth; the changes here preserve its workflow
+while mapping and validating the firmware paths, offsets, and bootstrap behavior
+for `iPhone12,1` / 24A435.
+
 PWN DFU was tested with the
 [Waveshare RP2350-USB-A](https://www.waveshare.com/wiki/RP2350-USB-A), using its
 onboard USB-A port and a normal USB-A-to-Lightning cable.
