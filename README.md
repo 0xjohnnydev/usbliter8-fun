@@ -1,12 +1,14 @@
-# iOS 27 jailbreak with usbliter8 exploit
+# Standard iPhone 11 / iOS 27 jailbreak with usbliter8
 
 > **CAUTION!**
 >
-> Running this (restoring a custom firmware) will delete your entire device and break everything: SEP, passcode, Wifi, Baseband, Bluetooth (partially work) and the entire Apple services, so please don't run it on your main device, ONLY do it on a spare **iPhone 11 Pro** only. This tutorial only targets developers that enjoy breaking their device!
+> Running this custom-firmware restore erases the device and leaves SEP,
+> passcode, Wi-Fi, baseband, Bluetooth, and Apple services partly or completely
+> unavailable. Use only a spare **standard iPhone 11**.
 
-The upstream workflow is currently hardware-tested only on **iPhone 11 Pro**.
-This fork also contains an **experimental, offline-verified iPhone 11 port for
-iOS 27.0 build 24A435** in
+This fork's hardware-verified target is the **standard 6.1-inch iPhone 11**
+(`iPhone12,1`, `n104ap`, A13), not the Pro or Pro Max. The iOS 27.0 build
+24A435 port is in
 [`work-27.0-rc-iphone11`](work-27.0-rc-iphone11/README.md). Its corrected
 restore path completed a full hardware erase restore, and its tethered normal
 boot now carries the beta-2-only kernel and DeviceTree behavior with
@@ -14,30 +16,23 @@ fail-closed offset checks. Post-restore SSHRD diagnostics recovered and
 validated the exact RootTicket installed in Preboot. The normal chain has been
 rebuilt with that ticket, and all 17 inner boot payloads match the previously
 audited bundle byte-for-byte. A clean exact-ticket hardware run now completes
-`bootx` and enumerates in normal usbmux mode as `iPhone12,1` on iOS 27.0 build
-24A435, resolving the previous post-boot lit-black/no-USB stall.
+`bootx`, enumerates in normal usbmux mode, and launches Sileo 2.5.1 on iOS 27.0
+build 24A435.
 
 ## Hardware setup
 
-There's a SecureROM bug (released by Paradigm Shift) that requires the **RP2350** chip to exploit the device into PWN DFU mode. It only supports A12 and A13 (S4, S5 on Apple Watch series are also supported).
+This port was tested with the
+[**Waveshare RP2350-USB-A**](https://www.waveshare.com/wiki/RP2350-USB-A)
+running compatible `usbliter8` firmware. It has an onboard USB-A host port, so
+the iPhone connects with a normal USB-A-to-Lightning cable.
 
-You need to drop the file from the original `usbliter8` source onto the board to make it run the exploit.
-
-<p>
-  <img src="images/image1.jpg" width="360" />
-  <img src="images/image3.jpg" width="360" />
-</p>
-
-I use a **Raspberry Pi Pico 2** with RP2350 and a cut lightning cable:
-
-- red → VBUS
-- black → GND
-- white (D-) → G13
-- green (D+) → G12
+Flash the compatible `usbliter8` firmware through the board's USB-C programming
+port, then use its USB-A port for the iPhone DFU connection.
 
 ## Downloads
 
-- iOS 27.0 beta 2 for iPhone 11 Pro IPSW from [Apple's website](https://updates.cdn-apple.com/2026SpringSeed/fullrestores/140-20242/CD53E584-98E6-4560-B847-D8D5027223E8/iPhone12,3,iPhone12,5_27.0_24A5370h_Restore.ipsw).
+- iOS 27.0 build 24A435 restore IPSW for the standard iPhone 11:
+  `iPhone12,1_27.0_24A435_Restore.ipsw`.
 
 Install requirements:
 
@@ -45,44 +40,30 @@ Install requirements:
 pip3 install requests pyimg4 pymobiledevice3
 ```
 
-We work inside the `work-27.0b2` folder!
+Work inside `work-27.0-rc-iphone11` for this target.
 
-## Patches added
+## Ported patches
 
-The original source from wh1te4ever included a lot of patches, you can read it in the code.
-
-I added a few fixes to it to make it works:
-
-| Component | Offset | Value | Notes |
-| :---- | :---- | :---- | :---- |
-| kernel `isDeviceInRestoreMode` | file `0x2894b68` (VA `0xFFFFFFF009898B68`) | `20 00 80 d2 c0 03 5f d6`| USB Restricted Mode bypass |
-| kernel sandbox `file_check_mmap` | `0x2f774e0` | `00 00 80 d2 c0 03 5f d6` | Allow `/var/jb` execution (+ `mount_check_mount 0x2f75640`, `remount 0x2f75474`, `umount 0x2f75110`, `vnode_check_rename 0x2f7019c`) |
-| kernel `AMFIIsCDHashInTrustCache` | `0x1f1ebe0` | `mov x0,#1;...` | Trust everything |
-| DeviceTree `ephemeral-storage` | — | `u32=1` | Pass the 99% progress bar |
-| `coreauthd` | `0x95c0` | `NOP` | Anti SEP crash |
-| `ctkd` | `0x1b38/1b3c` | `mov x0,#0; ret` | Anti SEP crash |
-| `mobileactivationd` `should_hactivate` | `0x2ebb14` | `20 00 80 52` (`mov w0,#1`) | Hacktivation |
-| `mobileactivationd` `getActivationState` | `0x327cb0/d10/d14/d18` | `NOP/ADRP/ADD/NOP` → "Activated" | Belt-and-suspenders |
-| launchd `disabled.plist` | — | 5 labels → `true` | Skip Setup (ScreenTimeAgent deadlock) |
-
-The userland byte patches are scripted in [`patches/userland_patches.py`](patches/userland_patches.py) (`coreauthd`, `ctkd`, `mobileactivationd`). The launchd override is a plist edit, not a byte patch — see [`patches/disable_screentime.py`](patches/disable_screentime.py).
-
-> Offsets are build-specific to **24A5370h / iPhone12,3**. Re-verify them in IDA for any other build.
+The exact 24A435 offsets, preimage guards, verified artifact hashes, restore
+status, and Sileo bootstrap details are documented in the
+[`iPhone12,1` port README](work-27.0-rc-iphone11/README.md). Do not use the
+upstream beta-2 offsets on this build.
 
 ## Tutorial
 
-Put the device in DFU mode, then plug it into the PWN DFU rig (the Raspberry Pi Pico 2 mentioned above).
+Put the standard iPhone 11 in DFU mode, then connect it to the Waveshare
+RP2350-USB-A's USB-A port.
 
-> On the Pico 2, the light blinks twice while exploiting and stays lit on success. If the light turns off, the exploit failed, re-enter DFU mode and try again.
-
-You can verify PWN mode by opening **System Configuration → USB tab → Apple Mobile Device (DFU Mode)**; if you see `PWND:[usbliter8]` then it worked.
+Reconnect the phone directly to the Mac after the exploit. Verify the state with
+`irecovery -q`; it must report `MODE: DFU`, `PRODUCT: iPhone12,1`, and
+`PWND: usbliter8` before continuing.
 
 ### 1. Flash the Custom Firmware
 
 After PWN DFU mode is done, plug the device back into the Mac, then:
 
 ```shell
-cd work-27.0b2
+cd work-27.0-rc-iphone11
 ./make_cfw.py            # requires sudo, enter your password
 python3 tss_proxy_server.py && ./restore_cfw.sh
 ```
@@ -125,7 +106,9 @@ The SSHRD log will print on screen, that means SSHRD succeeded.
 ./boot.py
 ```
 
-That's the boot up. You can use SSH over dropbear and `iproxy` (default password `alpine`) to install Sileo with the bootstrap. Or you can do it over SSHRD.
+That starts the tethered normal boot. Use the guarded SSHRD bootstrap workflow
+documented in the port README; normal-mode root SSH is not part of the verified
+configuration.
 
 ### 4. Get past Setup
 
@@ -175,8 +158,6 @@ done
 ```
 
 Enjoy!
-
-![Jailbroken iPhone 11 Pro on iOS 27.0](images/image2.jpg)
 
 ## Credits
 

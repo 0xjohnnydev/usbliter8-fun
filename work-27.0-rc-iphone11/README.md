@@ -1,7 +1,12 @@
 # iPhone 11 / iOS 27.0 (24A435) port
 
-This directory is the experimental `usbliter8-fun` port for the **iPhone 11**
-(`iPhone12,1`, `n104ap`, `t8030`) on **iOS 27.0 build 24A435**.
+This directory is the hardware-verified `usbliter8-fun` port for the **standard
+6.1-inch iPhone 11** (`iPhone12,1`, `n104ap`, `t8030`) on **iOS 27.0 build
+24A435**. It does not target the iPhone 11 Pro or Pro Max.
+
+PWN DFU was tested with the
+[Waveshare RP2350-USB-A](https://www.waveshare.com/wiki/RP2350-USB-A), using its
+onboard USB-A port and a normal USB-A-to-Lightning cable.
 
 The IPSW paths and byte offsets have been ported and checked against the local
 24A435 restore image. The corrected restore patch set completed a full erase
